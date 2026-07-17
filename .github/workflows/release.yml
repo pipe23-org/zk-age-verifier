@@ -73,7 +73,9 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          # pylongfellow ships x86_64 wheels only; arm64 falls back to an sdist
+          # build that needs a compiler the slim image does not have (workspace#40).
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
