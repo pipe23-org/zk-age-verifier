@@ -31,7 +31,7 @@ dependencies = [
     "fastapi",
     "granian",
     "pydantic-settings",
-    "pyhpke>=0.6.4",
+    "pyhpke>=0.6.5",
     "pylongfellow>=0.2.2,<0.3",
     "structlog",
 ]
