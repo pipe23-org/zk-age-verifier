@@ -1,0 +1,230 @@
+import hashlib
+
+import cbor2
+import pytest
+from cryptography.hazmat.primitives.asymmetric import ec
+from pylongfellow.mdoc import ZkSpec
+
+from zk_age_verifier.core.encoding import b64url_decode, b64url_encode
+from zk_age_verifier.core.engine.circuits import HeldCircuit, zk_system_id
+from zk_age_verifier.core.transport.dc import (
+    COSE_CRV,
+    COSE_CRV_P256,
+    COSE_KTY,
+    COSE_KTY_EC2,
+    COSE_X,
+    COSE_Y,
+    DcTransport,
+    DecryptFailed,
+    InvalidEnvelope,
+    build_dc_request,
+    build_device_request,
+    build_encryption_info,
+    build_handover_hash,
+    build_session_transcript,
+    open_response,
+    parse_response_wrapper,
+    seal_response,
+)
+
+NONCE = bytes(range(16))
+
+# Pinned output of build_encryption_info(NONCE, <key from conftest SECRET>) so
+# unintended byte drift fails a test; the structure test below proves the pin
+# was correct when committed. Regenerate on intentional emission changes.
+EXPECTED_ENCRYPTION_INFO = bytes.fromhex(
+    "82656463617069a2656e6f6e636550000102030405060708090a0b0c0d0e0f7272"
+    "6563697069656e745075626c69634b6579a42258204536be3a50f318fbf9a54759"
+    "02a221502bef0d57e08c53b2cc0a56f17d9f9354215820515c3d6eb9e396b904d3"
+    "feca7f54fdcd0cc1e997bf375dca515ad0a6c3b4035f20010102"
+)
+
+
+def test_encryption_info_matches_pinned_bytes(recipient_key: ec.EllipticCurvePublicKey) -> None:
+    assert build_encryption_info(NONCE, recipient_key) == EXPECTED_ENCRYPTION_INFO
+
+
+def test_encryption_info_structure(recipient_key: ec.EllipticCurvePublicKey) -> None:
+    decoded = cbor2.loads(EXPECTED_ENCRYPTION_INFO)
+    assert decoded[0] == "dcapi"
+    body = decoded[1]
+    assert body["nonce"] == NONCE
+    numbers = recipient_key.public_numbers()
+    assert body["recipientPublicKey"] == {
+        COSE_KTY: COSE_KTY_EC2,
+        COSE_CRV: COSE_CRV_P256,
+        COSE_X: numbers.x.to_bytes(32, "big"),
+        COSE_Y: numbers.y.to_bytes(32, "big"),
+    }
+
+
+def test_device_request_decode_back(spec: ZkSpec) -> None:
+    zsid = zk_system_id(spec)
+    decoded = cbor2.loads(build_device_request(spec, zsid, ["age_over_18"]))
+    assert set(decoded.keys()) == {"version", "docRequests"}
+    assert decoded["version"] == "1.1"
+
+    doc_requests = decoded["docRequests"]
+    assert len(doc_requests) == 1
+    entry = doc_requests[0]
+    assert "readerAuth" not in entry
+
+    items = entry["itemsRequest"]
+    assert isinstance(items, cbor2.CBORTag)
+    assert items.tag == 24
+    items_map = cbor2.loads(items.value)
+    assert items_map["docType"] == "eu.europa.ec.av.1"
+    namespace = items_map["nameSpaces"]["eu.europa.ec.av.1"]
+    assert namespace == {"age_over_18": False}  # intentToRetain
+
+    # requestInfo INSIDE the tag-24 itemsRequest — the only location the shipped
+    # wallet reads (observed 2026-07-14); a DocRequest-level sibling is ignored.
+    assert set(entry.keys()) == {"itemsRequest"}
+    zk_request = items_map["requestInfo"]["zkRequest"]
+    assert zk_request["zkRequired"] is True
+    system_specs = zk_request["systemSpecs"]
+    assert len(system_specs) == 1
+    system_spec = system_specs[0]
+    assert system_spec["zkSystemId"] == zsid
+    assert system_spec["system"] == spec.system
+    assert system_spec["params"] == {
+        "version": spec.version,
+        "circuit_hash": spec.circuit_hash,
+        "num_attributes": spec.num_attributes,
+        "block_enc_hash": spec.block_enc_hash,
+        "block_enc_sig": spec.block_enc_sig,
+    }
+
+
+def test_dc_request_shape() -> None:
+    dc_request = build_dc_request(b"\x01\x02", b"\x03\x04")
+    assert set(dc_request.keys()) == {"digital", "mediation"}
+    assert dc_request["mediation"] == "required"
+
+    digital = dc_request["digital"]
+    assert isinstance(digital, dict)
+    assert set(digital.keys()) == {"requests"}
+    requests = digital["requests"]
+    assert isinstance(requests, list)
+    assert len(requests) == 1
+    request = requests[0]
+    assert set(request.keys()) == {"protocol", "data"}
+    assert request["protocol"] == "org-iso-mdoc"
+
+    data = request["data"]
+    assert set(data.keys()) == {"deviceRequest", "encryptionInfo"}
+    assert "=" not in data["deviceRequest"]
+    assert "=" not in data["encryptionInfo"]
+    assert b64url_decode(data["deviceRequest"]) == b"\x01\x02"
+    assert b64url_decode(data["encryptionInfo"]) == b"\x03\x04"
+
+
+def test_claim_count_guard(spec: ZkSpec) -> None:
+    with pytest.raises(ValueError, match="claim count"):
+        build_device_request(spec, "zsid", [])
+
+
+def test_build_offer_state_and_request(spec: ZkSpec) -> None:
+    held = HeldCircuit(spec=spec, circuit=b"", zk_system_id=zk_system_id(spec))
+    state, offer = DcTransport(held).build_offer(["age_over_18"])
+
+    assert offer["mediation"] == "required"
+    digital = offer["digital"]
+    assert isinstance(digital, dict)
+    requests = digital["requests"]
+    assert isinstance(requests, list)
+    data = requests[0]["data"]
+    assert state.encryption_info_b64 == data["encryptionInfo"]
+
+    cose_key = cbor2.loads(b64url_decode(state.encryption_info_b64))[1]["recipientPublicKey"]
+    numbers = state.private_key.public_key().public_numbers()
+    assert cose_key[COSE_X] == numbers.x.to_bytes(32, "big")
+
+
+ENCRYPTION_INFO_B64 = "ZW5jcnlwdGlvbi1pbmZv"
+ORIGIN = "https://chat.example.org"
+
+# Pinned output of build_session_transcript(ENCRYPTION_INFO_B64, ORIGIN) so
+# unintended byte drift fails a test; the structure test below proves the pin
+# was correct when committed. Regenerate on intentional emission changes.
+EXPECTED_TRANSCRIPT = bytes.fromhex(
+    "83f6f6826564636170695820217b8a9b5540f09b43d6ae2a62b0fd44593bced4fde7ff3e54947fcc4cc109e4"
+)
+
+
+def test_transcript_matches_pinned_bytes() -> None:
+    assert build_session_transcript(ENCRYPTION_INFO_B64, ORIGIN) == EXPECTED_TRANSCRIPT
+
+
+def test_transcript_structure() -> None:
+    decoded = cbor2.loads(EXPECTED_TRANSCRIPT)
+    assert decoded[0] is None
+    assert decoded[1] is None
+    handover = decoded[2]
+    assert handover[0] == "dcapi"
+    assert handover[1] == hashlib.sha256(cbor2.dumps([ENCRYPTION_INFO_B64, ORIGIN])).digest()
+
+
+def test_transcript_binds_origin() -> None:
+    other = build_session_transcript(ENCRYPTION_INFO_B64, "https://evil.example.org")
+    assert other != EXPECTED_TRANSCRIPT
+
+
+def test_handover_hash_matches_transcript_digest() -> None:
+    decoded = cbor2.loads(EXPECTED_TRANSCRIPT)
+    assert build_handover_hash(ENCRYPTION_INFO_B64, ORIGIN) == decoded[2][1]
+
+
+SEAL_TRANSCRIPT = b"session-transcript-bytes"
+PLAINTEXT = b"the device response"
+
+
+def test_round_trip() -> None:
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    enc, ciphertext = seal_response(PLAINTEXT, private_key.public_key(), SEAL_TRANSCRIPT)
+    assert open_response(enc, ciphertext, private_key, SEAL_TRANSCRIPT) == PLAINTEXT
+
+
+def test_wrong_transcript_fails() -> None:
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    enc, ciphertext = seal_response(PLAINTEXT, private_key.public_key(), SEAL_TRANSCRIPT)
+    with pytest.raises(DecryptFailed):
+        open_response(enc, ciphertext, private_key, b"a different transcript")
+
+
+def test_wrong_key_fails() -> None:
+    sealed_to = ec.generate_private_key(ec.SECP256R1())
+    other = ec.generate_private_key(ec.SECP256R1())
+    enc, ciphertext = seal_response(PLAINTEXT, sealed_to.public_key(), SEAL_TRANSCRIPT)
+    with pytest.raises(DecryptFailed):
+        open_response(enc, ciphertext, other, SEAL_TRANSCRIPT)
+
+
+def _wrapper(enc: object = b"enc-key", ciphertext: object = b"ciphertext") -> dict[str, object]:
+    return {
+        "response": b64url_encode(cbor2.dumps(["dcapi", {"enc": enc, "cipherText": ciphertext}]))
+    }
+
+
+def test_parse_wrapper_happy() -> None:
+    assert parse_response_wrapper(_wrapper()) == (b"enc-key", b"ciphertext")
+
+
+def test_parse_wrapper_response_not_string() -> None:
+    with pytest.raises(InvalidEnvelope):
+        parse_response_wrapper({"response": 5})
+
+
+def test_parse_wrapper_not_cbor() -> None:
+    with pytest.raises(InvalidEnvelope):
+        parse_response_wrapper({"response": b64url_encode(b"\x9f")})
+
+
+def test_parse_wrapper_wrong_discriminator() -> None:
+    with pytest.raises(InvalidEnvelope):
+        parse_response_wrapper({"response": b64url_encode(cbor2.dumps(["nope", {}]))})
+
+
+def test_parse_wrapper_missing_fields() -> None:
+    with pytest.raises(InvalidEnvelope):
+        parse_response_wrapper(_wrapper(ciphertext="not-bytes"))

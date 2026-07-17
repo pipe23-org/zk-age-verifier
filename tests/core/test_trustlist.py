@@ -1,0 +1,158 @@
+import base64
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.serialization import Encoding
+from cryptography.x509.oid import NameOID
+
+from zk_age_verifier.config import ConfigError, TrustSource
+from zk_age_verifier.core import trustlist
+from zk_age_verifier.core.trustlist import AnchorSet, UntrustedIssuer, load_anchors
+
+# The test CA and the upstream test-issuer key its vendored leaf certifies.
+TEST_ANCHOR_PEM = Path(__file__).parents[1] / "integration" / "credentials" / "test-anchor.pem"
+VENDORED_ISSUER_X = 0xB4682EC20E06E8DF840B5DD32959798AB20C544D4DA50109FF4684D06FD261FC
+
+NOW = datetime.now(UTC)
+
+
+def _cert(
+    key: ec.EllipticCurvePrivateKey,
+    subject: str,
+    issuer: str,
+    signer: ec.EllipticCurvePrivateKey,
+    *,
+    ca: bool = False,
+    not_after: datetime | None = None,
+) -> x509.Certificate:
+    builder = (
+        x509.CertificateBuilder()
+        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, subject)]))
+        .issuer_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, issuer)]))
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(NOW - timedelta(days=1))
+        .not_valid_after(not_after or NOW + timedelta(days=365))
+    )
+    if ca:
+        builder = builder.add_extension(
+            x509.BasicConstraints(ca=True, path_length=None), critical=True
+        )
+    return builder.sign(signer, hashes.SHA256())
+
+
+def _self_signed(subject: str = "anchor", not_after: datetime | None = None) -> x509.Certificate:
+    key = ec.generate_private_key(ec.SECP256R1())
+    return _cert(key, subject, subject, key, ca=True, not_after=not_after)
+
+
+def _xy(key: ec.EllipticCurvePrivateKey) -> tuple[int, int]:
+    numbers = key.public_key().public_numbers()
+    return numbers.x, numbers.y
+
+
+def test_exact_match_accepted() -> None:
+    key = ec.generate_private_key(ec.SECP256R1())
+    anchor = _cert(key, "anchor", "anchor", key, ca=True)
+    assert AnchorSet((anchor,)).resolve(anchor) == _xy(key)
+
+
+def test_chained_leaf_accepted() -> None:
+    ca_key = ec.generate_private_key(ec.SECP256R1())
+    ca = _cert(ca_key, "CA", "CA", ca_key, ca=True)
+    ds_key = ec.generate_private_key(ec.SECP256R1())
+    ds = _cert(ds_key, "DS", "CA", ca_key)
+    assert AnchorSet((ca,)).resolve(ds) == _xy(ds_key)
+
+
+def test_unrelated_cert_rejected() -> None:
+    with pytest.raises(UntrustedIssuer):
+        AnchorSet((_self_signed(),)).resolve(_self_signed("stranger"))
+
+
+def test_expired_anchor_rejected() -> None:
+    expired = _self_signed(not_after=NOW - timedelta(days=1))
+    with pytest.raises(UntrustedIssuer):
+        AnchorSet((expired,)).resolve(expired)
+
+
+def test_non_p256_key_rejected() -> None:
+    key = ec.generate_private_key(ec.SECP384R1())
+    cert = _cert(key, "p384", "p384", key, ca=True)
+    with pytest.raises(UntrustedIssuer):
+        AnchorSet((cert,)).resolve(cert)
+
+
+def test_committed_credential_leaf_resolves_through_committed_anchor() -> None:
+    anchors = load_anchors([TrustSource(pem=str(TEST_ANCHOR_PEM))])
+    leaf = x509.load_pem_x509_certificate(
+        (TEST_ANCHOR_PEM.parent / "eu-av-vendored" / "leaf.pem").read_bytes()
+    )
+    x, _ = anchors.resolve(leaf)
+    assert x == VENDORED_ISSUER_X
+
+
+def test_pem_file_source(tmp_path: Path) -> None:
+    anchor = _self_signed()
+    pem = tmp_path / "anchor.pem"
+    pem.write_bytes(anchor.public_bytes(Encoding.PEM))
+    anchors = load_anchors([TrustSource(pem=str(pem))])
+    assert anchors.resolve(anchor)
+
+
+def test_pem_directory_source(tmp_path: Path) -> None:
+    first, second = _self_signed("one"), _self_signed("two")
+    (tmp_path / "one.pem").write_bytes(first.public_bytes(Encoding.PEM))
+    (tmp_path / "two.pem").write_bytes(second.public_bytes(Encoding.PEM))
+    (tmp_path / "notes.txt").write_text("ignored")
+    anchors = load_anchors([TrustSource(pem=str(tmp_path))])
+    assert len(anchors.anchors) == 2
+
+
+def test_empty_anchor_set_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ConfigError, match="no anchors"):
+        load_anchors([TrustSource(pem=str(tmp_path))])
+
+
+def _etsi_xml(*certs: x509.Certificate) -> bytes:
+    entries = "".join(
+        "<X509Certificate>\n"
+        + base64.b64encode(cert.public_bytes(Encoding.DER)).decode("ascii")
+        + "\n</X509Certificate>"
+        for cert in certs
+    )
+    return (
+        '<TrustServiceStatusList xmlns="http://uri.etsi.org/02231/v2#">'
+        f"{entries}</TrustServiceStatusList>"
+    ).encode("ascii")
+
+
+def test_etsi_xml_path_source(tmp_path: Path) -> None:
+    anchor = _self_signed()
+    listing = tmp_path / "tsl.xml"
+    listing.write_bytes(_etsi_xml(anchor))
+    anchors = load_anchors([TrustSource(etsi_xml=str(listing))])
+    assert anchors.resolve(anchor)
+
+
+def test_etsi_xml_url_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    anchor = _self_signed()
+    xml = _etsi_xml(anchor)
+
+    class _Response:
+        def __enter__(self) -> "_Response":
+            return self
+
+        def __exit__(self, *_: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return xml
+
+    monkeypatch.setattr(trustlist, "urlopen", lambda _url: _Response())
+    anchors = load_anchors([TrustSource(etsi_xml="https://tsl.example.org/list.xml")])
+    assert anchors.resolve(anchor)

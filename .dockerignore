@@ -1,0 +1,7 @@
+*
+!pyproject.toml
+!uv.lock
+!src
+!README.md
+!LICENSE
+!docker-entrypoint.sh

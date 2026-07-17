@@ -1,0 +1,59 @@
+name: zk_age_verifier_demo
+
+services:
+  traefik:
+    image: traefik:v3.3
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --entrypoints.websecure.address=:443
+    ports:
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DEMO_CERT_DIR:?set DEMO_CERT_DIR to the directory holding cert.pem and key.pem}:/certs:ro
+      - ./traefik:/etc/traefik/dynamic:ro
+    networks:
+      - edge
+    depends_on:
+      - backend
+
+  backend:
+    build: .
+    restart: unless-stopped
+    environment:
+      DEMO_VERIFIER_URL: http://verifier:8000
+      DEMO_PORT: "8080"
+    networks:
+      - edge
+      - internal
+    depends_on:
+      - verifier
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.demo.rule=Host(`${DEMO_DOMAIN:?set DEMO_DOMAIN to the page origin host}`)
+      - traefik.http.routers.demo.entrypoints=websecure
+      - traefik.http.routers.demo.tls=true
+      - traefik.http.services.demo.loadbalancer.server.port=8080
+
+  verifier:
+    build: ../..
+    restart: unless-stopped
+    environment:
+      ZK_AGE_VERIFIER_CONFIG: /etc/zk-age-verifier/config.toml
+      ZK_AGE_VERIFIER_SERVICE__EXPECTED_ORIGIN: https://${DEMO_DOMAIN:?set DEMO_DOMAIN to the page origin host}
+    volumes:
+      - ./verifier-config.toml:/etc/zk-age-verifier/config.toml:ro
+      - ${DEMO_VERIFIER_ANCHOR:-./anchors}:/etc/zk-age-verifier/anchors:ro
+      - circuits:/home/app/.cache/zk-age-verifier/circuits
+    networks:
+      - internal
+
+networks:
+  edge:
+  internal:
+    internal: true
+
+volumes:
+  circuits:

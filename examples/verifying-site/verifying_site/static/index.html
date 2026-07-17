@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Age check</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 32rem;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      button {
+        font: inherit;
+        padding: 0.6rem 1.2rem;
+      }
+      #gate > .state {
+        display: none;
+        margin-top: 1.5rem;
+      }
+      #gate[data-state="idle"] .idle,
+      #gate[data-state="checking"] .checking,
+      #gate[data-state="verified"] .verified,
+      #gate[data-state="failed"] .failed,
+      #gate[data-state="rejected"] .rejected {
+        display: block;
+      }
+      #gate[data-state="checking"] button {
+        pointer-events: none;
+        opacity: 0.5;
+      }
+      .verified {
+        color: #157347;
+      }
+      .failed,
+      .rejected {
+        color: #b02a37;
+      }
+      code {
+        background: rgba(128, 128, 128, 0.18);
+        padding: 0.1rem 0.3rem;
+        border-radius: 0.2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Age check</h1>
+    <p>Prove you are over 18 with your wallet. No name, no birthdate, no account — one bit.</p>
+
+    <div id="gate" data-state="idle">
+      <button onclick="startCheck()">Check my age</button>
+
+      <p class="state checking">Waiting for your wallet…</p>
+      <p class="state verified">Verified. You are over 18.</p>
+      <p class="state failed">Not verified: <code id="reason"></code></p>
+      <p class="state rejected">No response from a wallet: <code id="detail"></code></p>
+    </div>
+
+    <script type="module">
+      import { present } from "/static/dc.js";
+
+      const gate = document.getElementById("gate");
+      const set = (state) => {
+        gate.dataset.state = state;
+      };
+
+      window.startCheck = async () => {
+        set("checking");
+        try {
+          const verdict = await present();
+          if (verdict.state === "verified") {
+            set("verified");
+          } else {
+            document.getElementById("reason").textContent =
+              verdict.reason ?? verdict.detail ?? "verification failed";
+            set("failed");
+          }
+        } catch (err) {
+          document.getElementById("detail").textContent = String(err);
+          set("rejected");
+        }
+      };
+    </script>
+  </body>
+</html>

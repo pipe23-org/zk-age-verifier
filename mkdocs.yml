@@ -1,0 +1,22 @@
+site_name: zk-age-verifier
+repo_url: https://github.com/pipe23-org/zk-age-verifier
+
+theme:
+  name: material
+  font: false
+
+hooks:
+  - scripts/dump_openapi.py
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+  - swagger-ui-tag
+
+nav:
+  - Home: index.md
+  - HTTP API: api.md

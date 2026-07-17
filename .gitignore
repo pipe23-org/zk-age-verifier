@@ -1,0 +1,16 @@
+.venv/
+build/
+dist/
+site/
+wheelhouse/
+*.egg-info/
+__pycache__/
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.env
+deploy/certs/
+docs/openapi.json
+

@@ -1,0 +1,7 @@
+# Verifier configuration for the compose demo. expected_origin is intentionally
+# absent: compose supplies it as ZK_AGE_VERIFIER_SERVICE__EXPECTED_ORIGIN, derived
+# from DEMO_DOMAIN, so the origin lives in exactly one place.
+[service]
+
+[trust]
+sources = [{ pem = "/etc/zk-age-verifier/anchors" }]

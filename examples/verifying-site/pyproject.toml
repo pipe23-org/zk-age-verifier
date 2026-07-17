@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "verifying-site"
+version = "0.0.0"
+description = "Example verifying site for zk-age-verifier: gate page and forwarding backend"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+    "fastapi",
+    "httpx",
+    "uvicorn",
+]
+
+[project.scripts]
+verifying-site = "verifying_site.__main__:main"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["verifying_site"]
+
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio",
+    "ruff",
+]
+
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

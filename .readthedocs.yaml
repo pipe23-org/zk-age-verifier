@@ -1,0 +1,11 @@
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.13"
+  commands:
+    - pip install uv
+    # full sync: the docs build imports the app to dump its OpenAPI schema
+    - uv sync --locked
+    - uv run --no-sync mkdocs build --strict -d "$READTHEDOCS_OUTPUT/html"
