@@ -17,8 +17,8 @@ An independent implementation; not affiliated with the EU Digital Identity Walle
 
 ## Usage
 
-Read the [documentation](https://zk-age-verifier.readthedocs.io/), install the
-[package](https://pypi.org/project/zk-age-verifier/), or pull the
+Read the [documentation](https://zk-age-verifier.readthedocs.io/). Install the
+[package](https://pypi.org/project/zk-age-verifier/) or pull the
 [container image](https://github.com/pipe23-org/zk-age-verifier/pkgs/container/zk-age-verifier).
 See `examples/` for an end-to-end test environment.
 
