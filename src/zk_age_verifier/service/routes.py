@@ -213,7 +213,9 @@ async def create_session(request: Request, body: CreateSessionRequest) -> Sessio
         200: {"content": {"application/json": {"examples": _VERDICT_EXAMPLES}}},
     },
 )
-async def submit_response(session_id: str, request: Request, body: DigitalCredentialData) -> Verdict:
+async def submit_response(
+    session_id: str, request: Request, body: DigitalCredentialData
+) -> Verdict:
     """Relay a wallet presentation and return the terminal verdict synchronously.
 
     Args:

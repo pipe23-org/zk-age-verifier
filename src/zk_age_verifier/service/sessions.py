@@ -101,7 +101,9 @@ class SessionStore:
             expires_at=created_at + timedelta(seconds=self._config.service.session_ttl_seconds),
         )
         self._sessions[session_id] = session
-        log.info("session_created", session_id=session_id, expires_at=session.expires_at.isoformat())
+        log.info(
+            "session_created", session_id=session_id, expires_at=session.expires_at.isoformat()
+        )
         return session, dc_request
 
     def take_for_attempt(self, session_id: str) -> Session:
