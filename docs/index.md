@@ -5,7 +5,7 @@ the W3C Digital Credentials API.
 
 The consumer's backend opens a session (`POST /sessions`) and its page passes the returned
 `transports.dc` offer to `navigator.credentials.get()`. The wallet's response is relayed back
-(`POST /sessions/{public_id}/presentation`) and the verdict returns on the same call:
+(`POST /sessions/{session_id}/presentation`) and the verdict returns on the same call:
 `{"age_over_18": true}` or a failure reason. The service stores no identifier for the person
 the verdict describes.
 

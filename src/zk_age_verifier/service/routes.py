@@ -2,9 +2,9 @@
 
 Three routes over ``SessionStore`` and the verify pipeline. ``POST /sessions`` creates a
 session and returns the closed, schema-pinned DC transport offer under ``transports.dc``.
-``POST /sessions/{public_id}/presentation`` claims the session's one attempt before any
+``POST /sessions/{session_id}/presentation`` claims the session's one attempt before any
 verification work and returns the terminal verdict synchronously.
-``GET /debug/transcript/{public_id}`` reconstructs the transcript bytes for post-mortem.
+``GET /debug/transcript/{session_id}`` reconstructs the transcript bytes for post-mortem.
 """
 
 from typing import Literal
@@ -99,7 +99,7 @@ class Transports(BaseModel):
 class SessionCreated(BaseModel):
     """The ``POST /sessions`` 201 body."""
 
-    public_id: str
+    session_id: str
     transports: Transports
     expires_at: str
 
@@ -148,10 +148,10 @@ _VERDICT_EXAMPLES = {
     summary="Open a session",
     description=(
         "Opens an age-verification session. The response carries the session handle "
-        "(`public_id`), the transport offers keyed by transport (`transports`), and the expiry "
+        "(`session_id`), the transport offers keyed by transport (`transports`), and the expiry "
         "(`expires_at`). The DC transport offer is at `transports.dc`.\n\n"
         "The page passes `transports.dc` to `navigator.credentials.get()` unchanged and relays "
-        "the wallet's response to `POST /sessions/{public_id}/presentation`. `checks` must be "
+        "the wallet's response to `POST /sessions/{session_id}/presentation`. `checks` must be "
         'exactly `["age_over_18"]`; a well-formed list with any other vocabulary gets 400. '
         "`expected_origin`, when present, replaces the configured origin for this session and "
         "must be the exact origin of the page that runs the credential call. The session "
@@ -183,14 +183,14 @@ async def create_session(request: Request, body: CreateSessionRequest) -> Sessio
     except StoreAtCapacity as exc:
         raise HTTPException(503, "session store at capacity") from exc
     return SessionCreated(
-        public_id=session.public_id,
+        session_id=session.session_id,
         transports=Transports(dc=dc_request),
         expires_at=session.expires_at.isoformat().replace("+00:00", "Z"),
     )
 
 
 @router.post(
-    "/sessions/{public_id}/presentation",
+    "/sessions/{session_id}/presentation",
     tags=["sessions"],
     operation_id="submitPresentation",
     summary="Submit the wallet's response, get the verdict",
@@ -213,11 +213,13 @@ async def create_session(request: Request, body: CreateSessionRequest) -> Sessio
         200: {"content": {"application/json": {"examples": _VERDICT_EXAMPLES}}},
     },
 )
-async def submit_response(public_id: str, request: Request, body: DigitalCredentialData) -> Verdict:
+async def submit_response(
+    session_id: str, request: Request, body: DigitalCredentialData
+) -> Verdict:
     """Relay a wallet presentation and return the terminal verdict synchronously.
 
     Args:
-        public_id: The session handle.
+        session_id: The session handle.
         request: The incoming request, carrying the app state.
         body: The DigitalCredential ``data`` object.
 
@@ -229,19 +231,19 @@ async def submit_response(public_id: str, request: Request, body: DigitalCredent
     """
     state = request.app.state
     try:
-        session = state.store.take_for_attempt(public_id)
+        session = state.store.take_for_attempt(session_id)
     except SessionUnknown as exc:
         raise HTTPException(404, "unknown or expired session") from exc
     except SessionAlreadyAttempted as exc:
         raise HTTPException(409, "session already attempted") from exc
-    log.info("response_received", public_id=public_id)
+    log.info("response_received", session_id=session_id)
     return await verify_response(
         session, state.held, state.anchors, body.model_dump(), state.config
     )
 
 
 @router.get(
-    "/debug/transcript/{public_id}",
+    "/debug/transcript/{session_id}",
     tags=["debug"],
     operation_id="debugTranscript",
     summary="Reconstruct a session's transcript inputs",
@@ -254,11 +256,11 @@ async def submit_response(public_id: str, request: Request, body: DigitalCredent
     response_description="Transcript inputs and reconstructed bytes",
     responses=problem_responses(404),
 )
-async def debug_transcript(public_id: str, request: Request) -> TranscriptDebug:
+async def debug_transcript(session_id: str, request: Request) -> TranscriptDebug:
     """Return a session's transcript inputs and reconstructed bytes.
 
     Args:
-        public_id: The session handle.
+        session_id: The session handle.
         request: The incoming request, carrying the app state.
 
     Returns:
@@ -269,7 +271,7 @@ async def debug_transcript(public_id: str, request: Request) -> TranscriptDebug:
         HTTPException: 404 for an unknown or expired session.
     """
     try:
-        session = request.app.state.store.get(public_id)
+        session = request.app.state.store.get(session_id)
     except SessionUnknown as exc:
         raise HTTPException(404, "unknown or expired session") from exc
     handover_hash = build_handover_hash(session.dc.encryption_info_b64, session.expected_origin)

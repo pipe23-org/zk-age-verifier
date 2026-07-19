@@ -2,10 +2,10 @@
 
 The consumer backend of the default DC-path topology. It serves the static gate page and
 forwards exactly two routes to the private verifier: ``POST /av/session`` to the verifier's
-``POST /sessions`` and ``POST /av/response`` to ``POST /sessions/{public_id}/presentation``.
+``POST /sessions`` and ``POST /av/response`` to ``POST /sessions/{session_id}/presentation``.
 Each forward copies the request body through unchanged and returns the verifier's status,
 content type, and body untouched, so problem+json errors pass through as issued. The backend
-never parses credential material; ``public_id`` arrives as a query parameter and is used only
+never parses credential material; ``session_id`` arrives as a query parameter and is used only
 to build the verifier URL.
 """
 

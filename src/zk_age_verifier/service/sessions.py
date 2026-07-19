@@ -13,7 +13,7 @@ from zk_age_verifier.core.transport.dc import DcSessionState, DcTransport
 
 log = structlog.get_logger(__name__)
 
-_PUBLIC_ID_BYTES = 16
+_SESSION_ID_BYTES = 16
 
 
 class SessionUnknown(Exception):
@@ -33,7 +33,7 @@ class Session:
     """One open age check.
 
     Attributes:
-        public_id: The opaque handle returned to the consumer.
+        session_id: The opaque handle returned to the consumer.
         dc: The DC transport's per-session state (recipient key, encryption info).
         expected_origin: The origin the consumer page's browser will assert.
         claims: The validated check list.
@@ -42,7 +42,7 @@ class Session:
         attempted: Whether the one response attempt has been spent.
     """
 
-    public_id: str
+    session_id: str
     dc: DcSessionState
     expected_origin: str
     claims: tuple[str, ...]
@@ -88,27 +88,29 @@ class SessionStore:
             log.warning("store_at_capacity", cap=cap)
             raise StoreAtCapacity(f"session cap {cap} reached")
 
-        public_id = secrets.token_urlsafe(_PUBLIC_ID_BYTES)
+        session_id = secrets.token_urlsafe(_SESSION_ID_BYTES)
         dc_state, dc_request = self._transport.build_offer(claims)
 
         created_at = datetime.now(UTC)
         session = Session(
-            public_id=public_id,
+            session_id=session_id,
             dc=dc_state,
             expected_origin=origin_override or self._config.service.expected_origin,
             claims=tuple(claims),
             created_at=created_at,
             expires_at=created_at + timedelta(seconds=self._config.service.session_ttl_seconds),
         )
-        self._sessions[public_id] = session
-        log.info("session_created", public_id=public_id, expires_at=session.expires_at.isoformat())
+        self._sessions[session_id] = session
+        log.info(
+            "session_created", session_id=session_id, expires_at=session.expires_at.isoformat()
+        )
         return session, dc_request
 
-    def take_for_attempt(self, public_id: str) -> Session:
+    def take_for_attempt(self, session_id: str) -> Session:
         """Claim a session's one response attempt.
 
         Args:
-            public_id: The session handle.
+            session_id: The session handle.
 
         Returns:
             The session, now marked attempted.
@@ -117,17 +119,17 @@ class SessionStore:
             SessionUnknown: No such session, or it has expired.
             SessionAlreadyAttempted: The attempt was already spent.
         """
-        session = self._live(public_id)
+        session = self._live(session_id)
         if session.attempted:
-            raise SessionAlreadyAttempted(public_id)
+            raise SessionAlreadyAttempted(session_id)
         session.attempted = True
         return session
 
-    def get(self, public_id: str) -> Session:
+    def get(self, session_id: str) -> Session:
         """Look up a session without spending its attempt.
 
         Args:
-            public_id: The session handle.
+            session_id: The session handle.
 
         Returns:
             The session, whether or not its attempt is spent.
@@ -135,13 +137,13 @@ class SessionStore:
         Raises:
             SessionUnknown: No such session, or it has expired.
         """
-        return self._live(public_id)
+        return self._live(session_id)
 
-    def _live(self, public_id: str) -> Session:
+    def _live(self, session_id: str) -> Session:
         """Return the session if unexpired, evicting it on expiry.
 
         Args:
-            public_id: The session handle.
+            session_id: The session handle.
 
         Returns:
             The live session.
@@ -149,13 +151,13 @@ class SessionStore:
         Raises:
             SessionUnknown: No such session, or it has expired.
         """
-        session = self._sessions.get(public_id)
+        session = self._sessions.get(session_id)
         if session is None:
-            raise SessionUnknown(public_id)
+            raise SessionUnknown(session_id)
         if datetime.now(UTC) >= session.expires_at:
-            del self._sessions[public_id]
-            log.info("session_expired", public_id=public_id)
-            raise SessionUnknown(public_id)
+            del self._sessions[session_id]
+            log.info("session_expired", session_id=session_id)
+            raise SessionUnknown(session_id)
         return session
 
     def sweep(self) -> int:

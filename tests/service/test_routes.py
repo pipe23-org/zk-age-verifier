@@ -36,8 +36,8 @@ def make_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> MakeApp:
 def _open_session(client: TestClient) -> str:
     response = client.post("/sessions", json={"checks": ["age_over_18"]})
     assert response.status_code == 201
-    public_id: str = response.json()["public_id"]
-    return public_id
+    session_id: str = response.json()["session_id"]
+    return session_id
 
 
 def test_create_session_returns_pinned_request(make_app: MakeApp) -> None:
@@ -45,7 +45,7 @@ def test_create_session_returns_pinned_request(make_app: MakeApp) -> None:
         response = client.post("/sessions", json={"checks": ["age_over_18"]})
     assert response.status_code == 201
     body = response.json()
-    assert set(body) == {"public_id", "transports", "expires_at"}
+    assert set(body) == {"session_id", "transports", "expires_at"}
     assert body["transports"]["dc"]["mediation"] == "required"
     assert body["transports"]["dc"]["digital"]["requests"][0]["protocol"] == "org-iso-mdoc"
     assert body["expires_at"].endswith("Z")
@@ -59,7 +59,7 @@ def test_create_session_origin_override(make_app: MakeApp) -> None:
             json={"checks": ["age_over_18"], "expected_origin": "https://other.example"},
         )
         assert response.status_code == 201
-        session = app.state.store.get(response.json()["public_id"])
+        session = app.state.store.get(response.json()["session_id"])
     assert session.expected_origin == "https://other.example"
 
 
@@ -118,8 +118,8 @@ def test_response_verified_passes_state_through(
 
     monkeypatch.setattr(routes, "verify_response", stub)
     with TestClient(make_app()) as client:
-        public_id = _open_session(client)
-        response = client.post(f"/sessions/{public_id}/presentation", json={"response": "abc"})
+        session_id = _open_session(client)
+        response = client.post(f"/sessions/{session_id}/presentation", json={"response": "abc"})
     assert response.status_code == 200
     assert response.json()["state"] == "verified"
     assert captured["held"] is HELD_STUB
@@ -134,8 +134,8 @@ def test_response_failed_reason_passthrough(
 
     monkeypatch.setattr(routes, "verify_response", stub)
     with TestClient(make_app()) as client:
-        public_id = _open_session(client)
-        response = client.post(f"/sessions/{public_id}/presentation", json={"response": "abc"})
+        session_id = _open_session(client)
+        response = client.post(f"/sessions/{session_id}/presentation", json={"response": "abc"})
     assert response.status_code == 200
     assert response.json() == {"state": "failed", "reason": "proof-invalid"}
 
@@ -149,9 +149,9 @@ def test_response_unknown_is_404(make_app: MakeApp) -> None:
 def test_response_expired_is_404(make_app: MakeApp) -> None:
     app = make_app()
     with TestClient(app) as client:
-        public_id = _open_session(client)
-        app.state.store._sessions[public_id].expires_at = datetime.now(UTC) - timedelta(seconds=1)
-        response = client.post(f"/sessions/{public_id}/presentation", json={"response": "abc"})
+        session_id = _open_session(client)
+        app.state.store._sessions[session_id].expires_at = datetime.now(UTC) - timedelta(seconds=1)
+        response = client.post(f"/sessions/{session_id}/presentation", json={"response": "abc"})
     assert response.status_code == 404
 
 
@@ -161,8 +161,8 @@ def test_response_second_attempt_is_409(make_app: MakeApp, monkeypatch: pytest.M
 
     monkeypatch.setattr(routes, "verify_response", stub)
     with TestClient(make_app()) as client:
-        public_id = _open_session(client)
-        url = f"/sessions/{public_id}/presentation"
+        session_id = _open_session(client)
+        url = f"/sessions/{session_id}/presentation"
         assert client.post(url, json={"response": "abc"}).status_code == 200
         response = client.post(url, json={"response": "abc"})
     assert response.status_code == 409
@@ -170,8 +170,8 @@ def test_response_second_attempt_is_409(make_app: MakeApp, monkeypatch: pytest.M
 
 def test_response_shape_violation_is_422(make_app: MakeApp) -> None:
     with TestClient(make_app()) as client:
-        public_id = _open_session(client)
-        url = f"/sessions/{public_id}/presentation"
+        session_id = _open_session(client)
+        url = f"/sessions/{session_id}/presentation"
         response = client.post(url, json={"response": "abc", "extra": 1})
     assert response.status_code == 422
 
@@ -179,15 +179,15 @@ def test_response_shape_violation_is_422(make_app: MakeApp) -> None:
 def test_debug_transcript_happy(make_app: MakeApp) -> None:
     app = make_app()
     with TestClient(app) as client:
-        public_id = _open_session(client)
-        session = app.state.store.get(public_id)
+        session_id = _open_session(client)
+        session = app.state.store.get(session_id)
         expected_hash = build_handover_hash(
             session.dc.encryption_info_b64, session.expected_origin
         ).hex()
         expected_transcript = build_session_transcript(
             session.dc.encryption_info_b64, session.expected_origin
         ).hex()
-        response = client.get(f"/debug/transcript/{public_id}")
+        response = client.get(f"/debug/transcript/{session_id}")
     assert response.status_code == 200
     assert response.json() == {
         "origin": session.expected_origin,

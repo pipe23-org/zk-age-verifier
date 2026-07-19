@@ -11,8 +11,8 @@ from the verifier project.
 ## Routes
 
 - `POST /av/session` forwards to the verifier's `POST /sessions`.
-- `POST /av/response?session=<public_id>` forwards to the verifier's
-  `POST /sessions/{public_id}/presentation`.
+- `POST /av/response?session=<session_id>` forwards to the verifier's
+  `POST /sessions/{session_id}/presentation`.
 - `GET /` serves the gate page; `/static/` serves its assets.
 
 Each forward copies the request body through unchanged and returns the verifier's status code,

@@ -13,13 +13,13 @@ def test_honest_presentation_verifies(
 ) -> None:
     data = present(created_session["transports"]["dc"], origin)
 
-    verdict = client.post(f"/sessions/{created_session['public_id']}/presentation", json=data)
+    verdict = client.post(f"/sessions/{created_session['session_id']}/presentation", json=data)
     assert verdict.status_code == 200
     body = verdict.json()
     assert body["state"] == "verified"
     assert body["result"] == {"age_over_18": True}
 
-    debug = client.get(f"/debug/transcript/{created_session['public_id']}")
+    debug = client.get(f"/debug/transcript/{created_session['session_id']}")
     assert debug.status_code == 200
     encryption_info_b64 = created_session["transports"]["dc"]["digital"]["requests"][0]["data"][
         "encryptionInfo"
