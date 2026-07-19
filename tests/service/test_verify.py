@@ -39,7 +39,7 @@ def config(tmp_path: Path) -> Config:
 def session() -> Session:
     now = datetime.now(UTC)
     return Session(
-        public_id="pid",
+        session_id="pid",
         dc=DcSessionState(
             private_key=ec.generate_private_key(ec.SECP256R1()),
             encryption_info_b64=ENCRYPTION_INFO_B64,

@@ -123,7 +123,7 @@ async def verify_response(
     except _Failed as failure:
         log.info(
             "verify_failed",
-            public_id=session.public_id,
+            session_id=session.session_id,
             reason=failure.reason,
             detail=failure.detail,
             elapsed_ms=round((time.perf_counter() - started) * 1000, 3),
@@ -131,7 +131,7 @@ async def verify_response(
         return VerdictFailed(state="failed", reason=failure.reason)
     log.info(
         "verify_succeeded",
-        public_id=session.public_id,
+        session_id=session.session_id,
         elapsed_ms=round((time.perf_counter() - started) * 1000, 3),
     )
     return verdict

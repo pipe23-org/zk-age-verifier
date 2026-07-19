@@ -10,7 +10,7 @@ def test_session_forwards_body_to_verifier_sessions(client: TestClient, verifier
     verifier.response = httpx.Response(
         201,
         json={
-            "public_id": "abc",
+            "session_id": "abc",
             "transports": {"dc": {}},
             "expires_at": "2026-07-14T00:00:00Z",
         },
@@ -18,7 +18,7 @@ def test_session_forwards_body_to_verifier_sessions(client: TestClient, verifier
     reply = client.post("/av/session", json={"checks": ["age_over_18"]})
 
     assert reply.status_code == 201
-    assert reply.json()["public_id"] == "abc"
+    assert reply.json()["session_id"] == "abc"
     (forwarded,) = verifier.requests
     assert forwarded.method == "POST"
     assert str(forwarded.url) == f"{VERIFIER_URL}/sessions"
