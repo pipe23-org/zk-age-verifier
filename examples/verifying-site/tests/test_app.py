@@ -1,3 +1,5 @@
+import json
+
 import httpx
 from fastapi.testclient import TestClient
 
@@ -6,7 +8,7 @@ from tests.conftest import VERIFIER_URL, Verifier
 PROBLEM_JSON = "application/problem+json"
 
 
-def test_session_forwards_body_to_verifier_sessions(client: TestClient, verifier: Verifier) -> None:
+def test_session_opens_with_server_side_checks(client: TestClient, verifier: Verifier) -> None:
     verifier.response = httpx.Response(
         201,
         json={
@@ -15,14 +17,17 @@ def test_session_forwards_body_to_verifier_sessions(client: TestClient, verifier
             "expires_at": "2026-07-14T00:00:00Z",
         },
     )
-    reply = client.post("/av/session", json={"checks": ["age_over_18"]})
+    reply = client.post(
+        "/av/session",
+        json={"checks": ["age_over_16"], "expected_origin": "https://evil.example"},
+    )
 
     assert reply.status_code == 201
     assert reply.json()["session_id"] == "abc"
     (forwarded,) = verifier.requests
     assert forwarded.method == "POST"
     assert str(forwarded.url) == f"{VERIFIER_URL}/sessions"
-    assert forwarded.content == b'{"checks":["age_over_18"]}'
+    assert json.loads(forwarded.content) == {"checks": ["age_over_18"]}
 
 
 def test_session_passes_problem_json_through(client: TestClient, verifier: Verifier) -> None:
@@ -31,7 +36,7 @@ def test_session_passes_problem_json_through(client: TestClient, verifier: Verif
         json={"title": "Bad Request", "detail": "unsupported vocabulary"},
         headers={"content-type": PROBLEM_JSON},
     )
-    reply = client.post("/av/session", json={"checks": ["age_over_21"]})
+    reply = client.post("/av/session")
 
     assert reply.status_code == 400
     assert reply.headers["content-type"] == PROBLEM_JSON
@@ -78,7 +83,7 @@ def test_response_requires_session_query_param(client: TestClient, verifier: Ver
     assert verifier.requests == []
 
 
-def test_index_serves_gate_page(client: TestClient) -> None:
+def test_index_serves_page(client: TestClient) -> None:
     reply = client.get("/")
 
     assert reply.status_code == 200
