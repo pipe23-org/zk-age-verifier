@@ -156,3 +156,8 @@ def test_etsi_xml_url_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(trustlist, "urlopen", lambda _url: _Response())
     anchors = load_anchors([TrustSource(etsi_xml="https://tsl.example.org/list.xml")])
     assert anchors.resolve(anchor)
+
+
+def test_etsi_xml_http_url_rejected() -> None:
+    with pytest.raises(ConfigError, match="http"):
+        load_anchors([TrustSource(etsi_xml="http://tsl.example.org/list.xml")])
