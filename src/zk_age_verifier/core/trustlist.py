@@ -123,8 +123,19 @@ def _load_pem(location: str) -> list[x509.Certificate]:
 
 
 def _load_etsi_xml(location: str) -> list[x509.Certificate]:
-    """Fetch and parse an ETSI list from a path or URL, extracting its certificates."""
-    if urlsplit(location).scheme in ("http", "https"):
+    """Fetch and parse an ETSI list from a path or URL, extracting its certificates.
+
+    Raises:
+        ConfigError: The location is an ``http`` URL. A trust list fetched
+            over plain http can be replaced in transit, so only ``https``
+            URLs and local file paths are accepted.
+    """
+    scheme = urlsplit(location).scheme
+    if scheme == "http":
+        raise ConfigError(
+            f"trust source url uses scheme {scheme!r}; https or a file path is required"
+        )
+    if scheme == "https":
         with urlopen(location) as response:  # noqa: S310 - operator-configured startup fetch
             data = response.read()
     else:
