@@ -62,7 +62,7 @@ def _default_circuit_cache_dir() -> Path:
     """Return the default circuit cache directory, honouring ``XDG_CACHE_HOME``.
 
     The container image and compose files spell this path literally (Dockerfile,
-    compose.test.yaml, the verifying-site compose); a change here must move them too.
+    compose.test.yaml, the site-dc-mdoc compose); a change here must move them too.
     """
     cache_home = os.environ.get("XDG_CACHE_HOME")
     base = Path(cache_home) if cache_home else Path.home() / ".cache"
