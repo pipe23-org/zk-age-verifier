@@ -1,41 +1,96 @@
 # zk-age-verifier
 
+zk-age-verifier is a verifier service for EU age-verification proofs, presented as
+Longfellow zero-knowledge proofs over mdoc through the W3C Digital Credentials API. It
+runs as a sidecar HTTP service beside a consumer backend. A verdict contains one boolean
+per requested check and no name, birthdate, identifier, or wallet information. The service
+has no authentication and is intended to be reachable only from the consumer backend, not
+the browser or internet. It is experimental and unstable.
+
 [![CI](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml)
 [![Docs](https://app.readthedocs.org/projects/zk-age-verifier/badge/?version=latest)](https://zk-age-verifier.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/zk-age-verifier)](https://pypi.org/project/zk-age-verifier/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-## Overview
+## Installation
 
-An experimental verifier (relying party) for EUDI-AV wallet presentations. Implements
-DC-API / mdoc / longfellow-zk verification. End-to-end tested against the
-[AV reference wallet](https://github.com/eu-digital-identity-wallet/av-app-android-wallet-ui).
-Unstable, not to be used in production. Depends on
-[pipe23-org/pylongfellow](https://github.com/pipe23-org/pylongfellow), also unstable.
-
-An independent implementation; not affiliated with the EU Digital Identity Wallet project.
+```
+pip install zk-age-verifier
+uv add zk-age-verifier
+docker pull ghcr.io/pipe23-org/zk-age-verifier:latest
+```
 
 ## Usage
 
-Read the [documentation](https://zk-age-verifier.readthedocs.io/). Install the
-[package](https://pypi.org/project/zk-age-verifier/) or pull the
-[container image](https://github.com/pipe23-org/zk-age-verifier/pkgs/container/zk-age-verifier).
-See `examples/` for an end-to-end test environment.
+The verifier needs a configured page origin and at least one trust source.
+
+```toml
+[service]
+expected_origin = "https://av.example"
+
+[[trust.sources]]
+pem = "/etc/zk-age-verifier/anchors"
+```
+
+First start generates the ZK circuit and caches it on disk.
+
+```
+python -m zk_age_verifier --config config.toml
+```
+
+`POST /sessions` opens a session and returns the `navigator.credentials.get()` argument
+under `transports.dc`.
+
+```
+$ curl -X POST http://127.0.0.1:8000/sessions \
+    -H 'content-type: application/json' -d '{"checks": ["age_over_18"]}'
+{"session_id": "tmcdOPmo7oCgd4AmmMFyYg",
+ "transports": {"dc": {"digital": {"requests": [{"protocol": "org-iso-mdoc",
+   "data": {"deviceRequest": "omd2ZXJzaW9u…", "encryptionInfo": "gmVkY2FwaaJ…"}}]},
+   "mediation": "required"}},
+ "expires_at": "2026-07-20T09:34:22.089682Z"}
+```
+
+The page relays the wallet response to `POST /sessions/{session_id}/presentation`. A
+verified and a failed verification both return 200.
+
+```
+POST /sessions/{session_id}/presentation
+{"response": "<wallet response, base64url>"}
+
+{"state": "verified", "result": {"age_over_18": true}, "verified_at": "<iso8601>"}
+{"state": "failed", "reason": "decrypt-failed"}
+```
+
+## Configuration
+
+Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
+
+- `expected_origin` (required) — the exact `scheme://host[:port]` origin of the page that runs the credential call.
+- `session_ttl_seconds` (default 300) — session lifetime.
+- `session_cap` (default 1000) — live-session limit; `POST /sessions` returns 503 at the cap.
+- `timestamp_skew_seconds` (default 300) — proofs with a timestamp older than this fail `stale-proof`.
+- `cors_allowed_origins` (default `[]`) — origins for which CORS headers are emitted.
+- `circuit_cache_dir` (default `$XDG_CACHE_HOME/zk-age-verifier/circuits`) — where the generated circuit is cached.
+- `trust.sources` (required) — non-empty list; each entry sets one of `pem` (a PEM file or directory of issuer CA certs) or `etsi_xml` (an ETSI trusted-list URL).
+
+Environment variables `ZK_AGE_VERIFIER_<SECTION>__<KEY>` override scalar values; lists and
+nested tables come from the TOML file only. Environment variables take precedence over the
+TOML file, which takes precedence over the defaults.
+
+## Documentation
+
+Full documentation: https://zk-age-verifier.readthedocs.io/
 
 ## Development
 
 ```
-uv sync            # env from the lockfile
-uv run pytest      # tests; the coverage gate is on by default
+uv sync
+uv run pytest
 ```
 
-`make test-live` runs the suite against a real server over HTTP; `make test-container`
+`make test-live` runs the suite against a running server over HTTP. `make test-container`
 runs it against the built container image.
-
-<!-- HELD, do not forget (workspace#29): the hostile-input posture statement — crafted
-     bytes on the verify path can abort the process; the hostile-input-safe claim is
-     deliberately not made until the upstream guard+fuzz pass lands. Vehicle undecided:
-     SECURITY.md vs a README section vs both. -->
 
 ## License
 
