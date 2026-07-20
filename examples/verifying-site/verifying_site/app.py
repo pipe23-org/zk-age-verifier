@@ -1,13 +1,15 @@
 """The site backend: serve the page, open verifier sessions, forward wallet responses.
 
-The consumer backend of the default DC-path topology. ``POST /av/session`` opens a session
-at the verifier's ``POST /sessions`` with the backend's own ``checks``; the client request
-body is ignored, so the browser cannot choose the check vocabulary or set
-``expected_origin``. ``POST /av/response`` forwards the request body unchanged to
-``POST /sessions/{session_id}/presentation``; the body is ciphertext the backend cannot
-read, and ``session_id`` arrives as a query parameter and is used only to build the
-verifier URL. The verifier's status, content type, and body pass back untouched, so
-problem+json errors reach the page as issued.
+``POST /av/session`` opens a session at the verifier's ``POST /sessions`` with the backend's own
+``checks``; the client request body is ignored, so the browser cannot choose the check vocabulary
+or set ``expected_origin``.
+
+``POST /av/response`` forwards the request body unchanged to ``POST /sessions/{session_id}/presentation``;
+the body is ciphertext the backend cannot read, and ``session_id`` arrives as a query parameter and is
+used only to build the verifier URL.
+
+The verifier's status, content type, and body pass back untouched, so problem+json errors reach the page
+as issued.
 """
 
 import os
@@ -23,7 +25,7 @@ from fastapi.staticfiles import StaticFiles
 STATIC_DIR = Path(__file__).parent / "static"
 
 DEFAULT_VERIFIER_URL = "http://127.0.0.1:8000"
-"""Verifier base URL used when ``DEMO_VERIFIER_URL`` is unset (loopback beside the backend)."""
+"""Verifier base URL used when ``DEMO_VERIFIER_URL`` is unset."""
 
 SESSION_REQUEST = {"checks": ["age_over_18"]}
 """The session-open body. ``checks`` is the consumer's policy and is chosen here, server-side;
