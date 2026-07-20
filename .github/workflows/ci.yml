@@ -84,6 +84,6 @@ jobs:
       # The demo site is a standalone uv project (own lock); the relay tests stub
       # the verifier, so they need nothing from the parent package.
       - run: uv sync --locked
-        working-directory: examples/verifying-site
+        working-directory: examples/site-dc-mdoc
       - run: uv run --no-sync pytest
-        working-directory: examples/verifying-site
+        working-directory: examples/site-dc-mdoc
