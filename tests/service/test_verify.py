@@ -192,3 +192,35 @@ async def test_proof_invalid(
     body = _body(session, _device_response(held, chain))
     verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
     assert verdict == VerdictFailed(state="failed", reason="proof-invalid")
+
+
+async def test_malformed_inner_document_data(
+    session: Session, held: HeldCircuit, config: Config
+) -> None:
+    document = {"proof": b"proof-bytes", "documentData": cbor2.CBORTag(24, b"\xa1\x00")}
+    plaintext = cbor2.dumps({"version": "1.0", "status": 0, "zkDocuments": [document]})
+    body = _body(session, plaintext)
+    verdict = await verify_response(session, held, AnchorSet(()), body, config)
+    assert verdict == VerdictFailed(state="failed", reason="invalid-envelope")
+
+
+async def test_naive_timestamp(session: Session, held: HeldCircuit, config: Config) -> None:
+    # A tag-0 string without an offset decodes to a timezone-naive datetime.
+    naive = cbor2.CBORTag(0, "2026-01-15T09:00:00")
+    body = _body(session, _device_response(held, _anchor_cert()[1], timestamp=naive))
+    verdict = await verify_response(session, held, AnchorSet(()), body, config)
+    assert verdict == VerdictFailed(state="failed", reason="invalid-envelope")
+
+
+async def test_engine_error(
+    session: Session, held: HeldCircuit, config: Config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cert, chain = _anchor_cert()
+
+    def _boom(*_a: object, **_k: object) -> None:
+        raise RuntimeError("unexpected")
+
+    monkeypatch.setattr(mdoc, "verify", _boom)
+    body = _body(session, _device_response(held, chain))
+    verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
+    assert verdict == VerdictFailed(state="failed", reason="engine-error")
