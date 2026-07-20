@@ -1,12 +1,15 @@
-"""The site backend: serve the gate page and forward two routes to the verifier.
+"""The site backend: serve the page, open verifier sessions, forward wallet responses.
 
-The consumer backend of the default DC-path topology. It serves the static gate page and
-forwards exactly two routes to the private verifier: ``POST /av/session`` to the verifier's
-``POST /sessions`` and ``POST /av/response`` to ``POST /sessions/{session_id}/presentation``.
-Each forward copies the request body through unchanged and returns the verifier's status,
-content type, and body untouched, so problem+json errors pass through as issued. The backend
-never parses credential material; ``session_id`` arrives as a query parameter and is used only
-to build the verifier URL.
+``POST /av/session`` opens a session at the verifier's ``POST /sessions`` with the backend's own
+``checks``; the client request body is ignored, so the browser cannot choose the check vocabulary
+or set ``expected_origin``.
+
+``POST /av/response`` forwards the request body unchanged to ``POST /sessions/{session_id}/presentation``;
+the body is ciphertext the backend cannot read, and ``session_id`` arrives as a query parameter and is
+used only to build the verifier URL.
+
+The verifier's status, content type, and body pass back untouched, so problem+json errors reach the page
+as issued.
 """
 
 import os
@@ -22,7 +25,11 @@ from fastapi.staticfiles import StaticFiles
 STATIC_DIR = Path(__file__).parent / "static"
 
 DEFAULT_VERIFIER_URL = "http://127.0.0.1:8000"
-"""Verifier base URL used when ``DEMO_VERIFIER_URL`` is unset (loopback beside the backend)."""
+"""Verifier base URL used when ``DEMO_VERIFIER_URL`` is unset."""
+
+SESSION_REQUEST = {"checks": ["age_over_18"]}
+"""The session-open body. ``checks`` is the consumer's policy and is chosen here, server-side;
+client input never reaches ``POST /sessions``."""
 
 
 def verifier_base_url() -> str:
@@ -55,6 +62,14 @@ def create_app(client: httpx.AsyncClient | None = None) -> FastAPI:
 
     app = FastAPI(title="zk-age-verifier demo", lifespan=lifespan)
 
+    def reply(upstream: httpx.Response) -> Response:
+        """Return the verifier's reply untouched."""
+        return Response(
+            content=upstream.content,
+            status_code=upstream.status_code,
+            media_type=upstream.headers.get("content-type"),
+        )
+
     async def forward(request: Request, url: str) -> Response:
         """Forward the request body to ``url`` and return the verifier's reply untouched."""
         upstream = await request.app.state.client.post(
@@ -62,16 +77,13 @@ def create_app(client: httpx.AsyncClient | None = None) -> FastAPI:
             content=await request.body(),
             headers={"content-type": request.headers.get("content-type", "application/json")},
         )
-        return Response(
-            content=upstream.content,
-            status_code=upstream.status_code,
-            media_type=upstream.headers.get("content-type"),
-        )
+        return reply(upstream)
 
     @app.post("/av/session")
-    async def forward_session(request: Request) -> Response:
-        """Forward a session-open request to the verifier."""
-        return await forward(request, f"{base}/sessions")
+    async def open_session(request: Request) -> Response:
+        """Open a verifier session with ``SESSION_REQUEST``. The client body is ignored."""
+        upstream = await request.app.state.client.post(f"{base}/sessions", json=SESSION_REQUEST)
+        return reply(upstream)
 
     @app.post("/av/response")
     async def forward_response(request: Request, session: str) -> Response:

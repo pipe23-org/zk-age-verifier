@@ -2,7 +2,7 @@
 // transports.dc offer to the wallet verbatim, forward the wallet's response back, return the
 // verdict. A rejected promise (no wallet, user cancel, unsupported browser) propagates to the caller.
 export async function present() {
-  const session = await postJson("/av/session", { checks: ["age_over_18"] });
+  const session = await postJson("/av/session", {});
   const credential = await navigator.credentials.get(session.transports.dc);
   return postJson(`/av/response?session=${encodeURIComponent(session.session_id)}`, credential.data);
 }

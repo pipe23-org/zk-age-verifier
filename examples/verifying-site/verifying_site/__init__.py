@@ -1,1 +1,1 @@
-"""Example verifying site for zk-age-verifier: the gate page and its two-route backend."""
+"""Example verifying site for zk-age-verifier: the page and its backend."""
