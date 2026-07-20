@@ -1,6 +1,6 @@
-# dc-mdoc-example-site
+# site-dc-mdoc
 
-This directory runs a Docker Compose age-gate demonstration built on zk-age-verifier, wiring
+site-dc-mdoc is a Docker Compose age-gate demonstration built on zk-age-verifier, wiring
 a browser page, a site backend, the verifier, and a TLS-terminating traefik. The page calls
 the backend to open a verifier session and to relay the wallet response. Only the backend
 calls the verifier, which publishes no ports and is reachable only from the backend on an

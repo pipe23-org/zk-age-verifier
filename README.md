@@ -1,7 +1,7 @@
 # zk-age-verifier
 
-zk-age-verifier is a verifier service for EU age-verification proofs, presented as
-Longfellow zero-knowledge proofs over mdoc through the W3C Digital Credentials API. It
+zk-age-verifier is a verifier service for EU age verification, accepting Longfellow
+zero-knowledge proofs over mdoc through the W3C Digital Credentials API. It
 runs as a sidecar HTTP service beside a consumer backend. A verdict contains one boolean
 per requested check and no name, birthdate, identifier, or wallet information. The service
 has no authentication and is intended to be reachable only from the consumer backend, not
@@ -51,7 +51,7 @@ $ curl -X POST http://127.0.0.1:8000/sessions \
  "expires_at": "2026-07-20T09:34:22.089682Z"}
 ```
 
-The page relays the wallet response to `POST /sessions/{session_id}/presentation`. A
+The consumer backend relays the wallet response to `POST /sessions/{session_id}/presentation`. A
 verified and a failed verification both return 200.
 
 ```
@@ -91,6 +91,14 @@ uv run pytest
 
 `make test-live` runs the suite against a running server over HTTP. `make test-container`
 runs it against the built container image.
+
+## Status
+
+You should not rely on this code.
+
+- End-to-end testing covers Chrome on one Android 16 device.
+- No rate limiting.
+- The session store is in-process.
 
 ## License
 
