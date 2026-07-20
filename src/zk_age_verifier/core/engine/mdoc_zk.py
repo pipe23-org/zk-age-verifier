@@ -194,7 +194,10 @@ def _parse_zk_document(zk_doc: object) -> ZkDocument:
         raw_document_data = zk_doc["documentData"]
         if not isinstance(raw_document_data, cbor2.CBORTag) or raw_document_data.tag != 24:
             raise MalformedPresentation("documentData is not tag-24 encoded CBOR")
-        document_data = cbor2.loads(raw_document_data.value)
+        try:
+            document_data = cbor2.loads(raw_document_data.value)
+        except Exception as exc:
+            raise MalformedPresentation("documentData is not valid CBOR") from exc
         zk_system_id = document_data["zkSystemId"]
         doc_type = document_data["docType"]
         timestamp = document_data["timestamp"]
@@ -210,6 +213,7 @@ def _parse_zk_document(zk_doc: object) -> ZkDocument:
         and isinstance(zk_system_id, str)
         and isinstance(doc_type, str)
         and isinstance(timestamp, datetime)
+        and timestamp.tzinfo is not None
         and isinstance(issuer_signed, dict)
     ):
         raise MalformedPresentation("zkDocument fields have the wrong types")

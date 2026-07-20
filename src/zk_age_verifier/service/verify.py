@@ -49,6 +49,7 @@ FailureReason = Literal[
     "stale-proof",
     "untrusted-issuer",
     "proof-invalid",
+    "engine-error",
 ]
 """The machine reason set for a failed verdict."""
 
@@ -197,3 +198,6 @@ async def _run_engine(
         raise _Failed("untrusted-issuer") from exc
     except mdoc.VerifierError as exc:
         raise _Failed("proof-invalid", exc.code.name) from exc
+    except Exception as exc:
+        log.exception("verify_engine_error")
+        raise _Failed("engine-error") from exc
