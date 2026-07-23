@@ -74,6 +74,8 @@ Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
 - `circuit_cache_dir` (default `$XDG_CACHE_HOME/zk-age-verifier/circuits`) — where the generated circuit is cached.
 - `trust.sources` (required) — non-empty list; each entry sets one of `pem` (a PEM file or directory of issuer CA certs) or `etsi_xml` (an ETSI trusted-list URL).
 
+A presented document-signer certificate must carry the keyUsage extension asserting digitalSignature; an anchor accepted as the issuer of a chained leaf must assert keyCertSign.
+
 Environment variables `ZK_AGE_VERIFIER_<SECTION>__<KEY>` override scalar values; lists and
 nested tables come from the TOML file only. Environment variables take precedence over the
 TOML file, which takes precedence over the defaults.
