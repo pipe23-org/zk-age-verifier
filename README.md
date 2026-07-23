@@ -3,9 +3,8 @@
 zk-age-verifier is a verifier service for EU age verification, accepting Longfellow
 zero-knowledge proofs over mdoc through the W3C Digital Credentials API. It
 runs as a sidecar HTTP service beside a consumer backend. A verdict contains one boolean
-per requested check and no name, birthdate, identifier, or wallet information. The service
-has no authentication and is intended to be reachable only from the consumer backend, not
-the browser or internet. It is experimental and unstable.
+per requested check. The service has no authentication and is intended to be reachable only
+from the consumer backend, not the browser or internet. It is experimental and unstable.
 
 [![CI](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml)
 [![Docs](https://app.readthedocs.org/projects/zk-age-verifier/badge/?version=latest)](https://zk-age-verifier.readthedocs.io/en/latest/)
@@ -62,6 +61,13 @@ POST /sessions/{session_id}/presentation
 {"state": "failed", "reason": "decrypt-failed"}
 ```
 
+`GET /health` returns `{"status": "ok"}` while the process is up.
+
+`GET /debug/transcript/{session_id}` returns the transcript inputs stored for a session — the
+origin and the `encryptionInfo` string — with the handover hash and session-transcript bytes
+reconstructed from them, hex-encoded. It is a development route, unauthenticated like the rest
+of the service.
+
 ## Configuration
 
 Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
@@ -73,6 +79,10 @@ Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
 - `cors_allowed_origins` (default `[]`) — origins for which CORS headers are emitted.
 - `circuit_cache_dir` (default `$XDG_CACHE_HOME/zk-age-verifier/circuits`) — where the generated circuit is cached.
 - `trust.sources` (required) — non-empty list; each entry sets one of `pem` (a PEM file or directory of issuer CA certs) or `etsi_xml` (an ETSI trusted-list URL).
+
+A presented document-signer certificate must carry the keyUsage extension asserting digitalSignature; an anchor accepted as the issuer of a chained leaf must assert keyCertSign.
+
+Configured trust sources merge into one anchor set. Any anchor in that set can vouch for a certificate that signs age credentials. The certificate layer carries no required marker restricting what an anchor's certificates may sign. ETSI TS 119 412-6 clause 6 places no type indicator on EAA signing certificates. The `trust.sources` list must name only anchors intended to vouch for age credentials. A mixed-purpose or broad list authorizes every CA on it as an age-credential issuer.
 
 Environment variables `ZK_AGE_VERIFIER_<SECTION>__<KEY>` override scalar values; lists and
 nested tables come from the TOML file only. Environment variables take precedence over the

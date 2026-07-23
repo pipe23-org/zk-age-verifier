@@ -101,6 +101,21 @@ def _check_encoding_against_template(document: dict[str, Any], transcript: bytes
     _cose_verify(device_pub, payload, signature)
 
 
+def _key_usage(*, ca: bool) -> x509.KeyUsage:
+    """Build the keyUsage the trust layer requires: keyCertSign for a CA, else digitalSignature."""
+    return x509.KeyUsage(
+        digital_signature=not ca,
+        content_commitment=False,
+        key_encipherment=False,
+        data_encipherment=False,
+        key_agreement=False,
+        key_cert_sign=ca,
+        crl_sign=ca,
+        encipher_only=False,
+        decipher_only=False,
+    )
+
+
 def _make_certificate(
     subject_cn: str,
     public_key: ec.EllipticCurvePublicKey,
@@ -128,6 +143,7 @@ def _make_certificate(
         .serial_number(x509.random_serial_number())
         .not_valid_before(VALID_FROM)
         .not_valid_after(VALID_UNTIL)
+        .add_extension(_key_usage(ca=ca), critical=True)
     )
     if ca:
         builder = builder.add_extension(
