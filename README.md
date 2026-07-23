@@ -3,9 +3,8 @@
 zk-age-verifier is a verifier service for EU age verification, accepting Longfellow
 zero-knowledge proofs over mdoc through the W3C Digital Credentials API. It
 runs as a sidecar HTTP service beside a consumer backend. A verdict contains one boolean
-per requested check and no name, birthdate, identifier, or wallet information. The service
-has no authentication and is intended to be reachable only from the consumer backend, not
-the browser or internet. It is experimental and unstable.
+per requested check. The service has no authentication and is intended to be reachable only
+from the consumer backend, not the browser or internet. It is experimental and unstable.
 
 [![CI](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml)
 [![Docs](https://app.readthedocs.org/projects/zk-age-verifier/badge/?version=latest)](https://zk-age-verifier.readthedocs.io/en/latest/)
