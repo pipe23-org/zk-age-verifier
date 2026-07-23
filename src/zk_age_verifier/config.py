@@ -35,8 +35,8 @@ class ConfigError(Exception):
 def validate_origin(value: str) -> str:
     """Require a bare ``scheme://host[:port]`` origin with no path.
 
-    The origin is hashed into the presentation transcript, so it must be
-    exactly what the consumer page's browser will assert.
+    The origin is hashed into the presentation transcript, so it must equal
+    the origin the presentation asserts.
 
     Args:
         value: The candidate origin.
