@@ -110,7 +110,12 @@ class TrustSource(BaseModel):
 
 
 class TrustConfig(BaseModel):
-    """The ``[trust]`` table: a non-empty list of anchor sources."""
+    """The ``[trust]`` table: a non-empty list of anchor sources.
+
+    Every listed anchor is authorized to vouch for age credentials. A
+    mixed-purpose or broad list authorizes every CA on it as an age-credential
+    issuer.
+    """
 
     model_config = ConfigDict(extra="forbid")
 

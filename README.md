@@ -76,6 +76,8 @@ Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
 
 A presented document-signer certificate must carry the keyUsage extension asserting digitalSignature; an anchor accepted as the issuer of a chained leaf must assert keyCertSign.
 
+Configured trust sources merge into one anchor set. Any anchor in that set can vouch for a certificate that signs age credentials. The certificate layer carries no required marker restricting what an anchor's certificates may sign. ETSI TS 119 412-6 clause 6 places no type indicator on EAA signing certificates. The `trust.sources` list must name only anchors intended to vouch for age credentials. A mixed-purpose or broad list authorizes every CA on it as an age-credential issuer.
+
 Environment variables `ZK_AGE_VERIFIER_<SECTION>__<KEY>` override scalar values; lists and
 nested tables come from the TOML file only. Environment variables take precedence over the
 TOML file, which takes precedence over the defaults.
