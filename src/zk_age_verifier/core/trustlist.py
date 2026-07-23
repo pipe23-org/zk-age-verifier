@@ -48,7 +48,9 @@ class AnchorSet:
 
         The certificate is accepted if it is itself an anchor (SHA-256
         fingerprint match) or was directly issued by one, and is within its own
-        validity window in either case.
+        validity window in either case. A presented certificate must carry a
+        keyUsage extension asserting digitalSignature; an anchor accepted as the
+        issuer of a chained leaf must assert keyCertSign.
 
         Args:
             cert: The presented DS certificate from the proof's ``msoX5chain``.
@@ -76,16 +78,39 @@ class AnchorSet:
         now = datetime.now(UTC)
         if not (cert.not_valid_before_utc <= now <= cert.not_valid_after_utc):
             return False
+        if not _key_usage_permits(cert, "digital_signature"):
+            return False
         fingerprint = cert.fingerprint(hashes.SHA256())
         if any(fingerprint == anchor.fingerprint(hashes.SHA256()) for anchor in self.anchors):
             return True
         for anchor in self.anchors:
+            if not _key_usage_permits(anchor, "key_cert_sign"):
+                continue
             try:
                 cert.verify_directly_issued_by(anchor)
             except (ValueError, TypeError, InvalidSignature):
                 continue
             return True
         return False
+
+
+def _key_usage_permits(cert: x509.Certificate, bit: str) -> bool:
+    """Report whether a certificate's keyUsage extension asserts the named bit.
+
+    A certificate carrying no keyUsage extension asserts nothing.
+
+    Args:
+        cert: The certificate to inspect.
+        bit: The ``KeyUsage`` attribute name, e.g. ``"digital_signature"``.
+
+    Returns:
+        Whether the extension is present and asserts the bit.
+    """
+    try:
+        key_usage = cert.extensions.get_extension_for_class(x509.KeyUsage)
+    except x509.ExtensionNotFound:
+        return False
+    return bool(getattr(key_usage.value, bit))
 
 
 def load_anchors(sources: list[TrustSource]) -> AnchorSet:

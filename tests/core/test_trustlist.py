@@ -20,6 +20,20 @@ VENDORED_ISSUER_X = 0xB4682EC20E06E8DF840B5DD32959798AB20C544D4DA50109FF4684D06F
 NOW = datetime.now(UTC)
 
 
+def _key_usage(*, digital_signature: bool = False, key_cert_sign: bool = False) -> x509.KeyUsage:
+    return x509.KeyUsage(
+        digital_signature=digital_signature,
+        content_commitment=False,
+        key_encipherment=False,
+        data_encipherment=False,
+        key_agreement=False,
+        key_cert_sign=key_cert_sign,
+        crl_sign=False,
+        encipher_only=False,
+        decipher_only=False,
+    )
+
+
 def _cert(
     key: ec.EllipticCurvePrivateKey,
     subject: str,
@@ -28,6 +42,8 @@ def _cert(
     *,
     ca: bool = False,
     not_after: datetime | None = None,
+    key_usage: x509.KeyUsage | None = None,
+    with_key_usage: bool = True,
 ) -> x509.Certificate:
     builder = (
         x509.CertificateBuilder()
@@ -38,6 +54,9 @@ def _cert(
         .not_valid_before(NOW - timedelta(days=1))
         .not_valid_after(not_after or NOW + timedelta(days=365))
     )
+    if with_key_usage:
+        usage = key_usage or _key_usage(digital_signature=not ca, key_cert_sign=ca)
+        builder = builder.add_extension(usage, critical=True)
     if ca:
         builder = builder.add_extension(
             x509.BasicConstraints(ca=True, path_length=None), critical=True
@@ -47,7 +66,15 @@ def _cert(
 
 def _self_signed(subject: str = "anchor", not_after: datetime | None = None) -> x509.Certificate:
     key = ec.generate_private_key(ec.SECP256R1())
-    return _cert(key, subject, subject, key, ca=True, not_after=not_after)
+    return _cert(
+        key,
+        subject,
+        subject,
+        key,
+        ca=True,
+        not_after=not_after,
+        key_usage=_key_usage(digital_signature=True, key_cert_sign=True),
+    )
 
 
 def _xy(key: ec.EllipticCurvePrivateKey) -> tuple[int, int]:
@@ -57,7 +84,14 @@ def _xy(key: ec.EllipticCurvePrivateKey) -> tuple[int, int]:
 
 def test_exact_match_accepted() -> None:
     key = ec.generate_private_key(ec.SECP256R1())
-    anchor = _cert(key, "anchor", "anchor", key, ca=True)
+    anchor = _cert(
+        key,
+        "anchor",
+        "anchor",
+        key,
+        ca=True,
+        key_usage=_key_usage(digital_signature=True, key_cert_sign=True),
+    )
     assert AnchorSet((anchor,)).resolve(anchor) == _xy(key)
 
 
@@ -67,6 +101,33 @@ def test_chained_leaf_accepted() -> None:
     ds_key = ec.generate_private_key(ec.SECP256R1())
     ds = _cert(ds_key, "DS", "CA", ca_key)
     assert AnchorSet((ca,)).resolve(ds) == _xy(ds_key)
+
+
+def test_leaf_without_key_usage_rejected() -> None:
+    ca_key = ec.generate_private_key(ec.SECP256R1())
+    ca = _cert(ca_key, "CA", "CA", ca_key, ca=True)
+    ds_key = ec.generate_private_key(ec.SECP256R1())
+    ds = _cert(ds_key, "DS", "CA", ca_key, with_key_usage=False)
+    with pytest.raises(UntrustedIssuer):
+        AnchorSet((ca,)).resolve(ds)
+
+
+def test_leaf_without_digital_signature_rejected() -> None:
+    ca_key = ec.generate_private_key(ec.SECP256R1())
+    ca = _cert(ca_key, "CA", "CA", ca_key, ca=True)
+    ds_key = ec.generate_private_key(ec.SECP256R1())
+    ds = _cert(ds_key, "DS", "CA", ca_key, key_usage=_key_usage(key_cert_sign=True))
+    with pytest.raises(UntrustedIssuer):
+        AnchorSet((ca,)).resolve(ds)
+
+
+def test_chained_anchor_without_key_cert_sign_rejected() -> None:
+    ca_key = ec.generate_private_key(ec.SECP256R1())
+    ca = _cert(ca_key, "CA", "CA", ca_key, ca=True, key_usage=_key_usage(digital_signature=True))
+    ds_key = ec.generate_private_key(ec.SECP256R1())
+    ds = _cert(ds_key, "DS", "CA", ca_key)
+    with pytest.raises(UntrustedIssuer):
+        AnchorSet((ca,)).resolve(ds)
 
 
 def test_unrelated_cert_rejected() -> None:
@@ -82,7 +143,14 @@ def test_expired_anchor_rejected() -> None:
 
 def test_non_p256_key_rejected() -> None:
     key = ec.generate_private_key(ec.SECP384R1())
-    cert = _cert(key, "p384", "p384", key, ca=True)
+    cert = _cert(
+        key,
+        "p384",
+        "p384",
+        key,
+        ca=True,
+        key_usage=_key_usage(digital_signature=True, key_cert_sign=True),
+    )
     with pytest.raises(UntrustedIssuer):
         AnchorSet((cert,)).resolve(cert)
 
