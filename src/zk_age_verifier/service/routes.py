@@ -149,12 +149,11 @@ _VERDICT_EXAMPLES = {
     description=(
         "Opens an age-verification session. The response carries the session handle "
         "(`session_id`), the transport offers keyed by transport (`transports`), and the expiry "
-        "(`expires_at`). The DC transport offer is at `transports.dc`.\n\n"
-        "The page passes `transports.dc` to `navigator.credentials.get()` unchanged and relays "
-        "the wallet's response to `POST /sessions/{session_id}/presentation`. `checks` must be "
-        'exactly `["age_over_18"]`; a well-formed list with any other vocabulary gets 400. '
-        "`expected_origin`, when present, replaces the configured origin for this session and "
-        "must be the exact origin of the page that runs the credential call. The session "
+        "(`expires_at`). The DC transport offer is at `transports.dc`, the unmodified parameter "
+        "object for the `navigator.credentials.get()` call.\n\n"
+        '`checks` must be exactly `["age_over_18"]`; a well-formed list with any other '
+        "vocabulary gets 400. `expected_origin`, when present, replaces the configured origin "
+        "for this session and must equal the origin the presentation asserts. The session "
         "expires at `expires_at` whether or not a response arrives."
     ),
     response_description="Session created",
@@ -197,7 +196,8 @@ async def create_session(request: Request, body: CreateSessionRequest) -> Sessio
     description=(
         "Submits the wallet's response for a session and returns the verdict in the same "
         "call. The request body is the DigitalCredential `data` object exactly as the browser "
-        "returned it.\n\n"
+        "returned it. Invoking the credential call and relaying the response is the consumer's "
+        "responsibility.\n\n"
         "Verification is synchronous. The 200 body is the session's terminal state, "
         "`verified` or `failed`; a failed verification is a 200, not an HTTP error. A session "
         "accepts one response; later submissions get 409.\n\n"

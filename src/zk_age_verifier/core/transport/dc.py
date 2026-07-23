@@ -149,7 +149,7 @@ def build_handover_hash(encryption_info_b64: str, origin: str) -> bytes:
     Args:
         encryption_info_b64: The ``EncryptionInfo`` string exactly as issued;
             never re-encoded from the key.
-        origin: The origin the consumer page's browser asserted.
+        origin: The origin asserted in the presentation.
 
     Returns:
         ``SHA256(CBOR([encryption_info_b64, origin]))``.
@@ -167,7 +167,7 @@ def build_session_transcript(encryption_info_b64: str, origin: str) -> bytes:
     Args:
         encryption_info_b64: The ``EncryptionInfo`` string exactly as issued;
             never re-encoded from the key.
-        origin: The origin the consumer page's browser asserted.
+        origin: The origin asserted in the presentation.
 
     Returns:
         The CBOR bytes of the session transcript.

@@ -35,7 +35,7 @@ class Session:
     Attributes:
         session_id: The opaque handle returned to the consumer.
         dc: The DC transport's per-session state (recipient key, encryption info).
-        expected_origin: The origin the consumer page's browser will assert.
+        expected_origin: The origin the presentation must assert.
         claims: The validated check list.
         created_at: When the session was created.
         expires_at: When the session stops being usable.
