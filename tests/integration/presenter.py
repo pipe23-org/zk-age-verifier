@@ -19,9 +19,7 @@ from typing import Any
 
 import cbor2
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.hazmat.primitives.serialization import Encoding, load_pem_private_key
 from pylongfellow import mdoc
 
@@ -150,10 +148,11 @@ def _sign_device_transcript(cred: Credential, transcript: bytes) -> bytes:
     """Re-sign the credential's ``deviceAuth`` over a fresh session transcript.
 
     The prover validates the device signature against the transcript it proves
-    over, so each presentation replaces the committed signature with
-    one over this session's transcript: COSE_Sign1 with detached payload
-    ``DeviceAuthenticationBytes``, the encoding validated against the vendored
-    credential's own signature in ``scripts/generate_credentials.py``.
+    over, so each presentation replaces the committed signature with one over
+    this session's transcript, signed through
+    ``pylongfellow.mdoc.sign_device_authentication`` — the same primitive
+    ``scripts/generate_credentials.py`` validates against the vendored
+    credential's own signature.
 
     Args:
         cred: The credential; must hold its device key.
@@ -165,23 +164,14 @@ def _sign_device_transcript(cred: Credential, transcript: bytes) -> bytes:
     assert cred.device_key is not None
     response = cbor2.loads(cred.mdoc_bytes)
     document = response["documents"][0]
-    authentication = [
-        "DeviceAuthentication",
-        cbor2.loads(transcript),
-        document["docType"],
-        document["deviceSigned"]["nameSpaces"],
-    ]
-    payload = cbor2.dumps(cbor2.CBORTag(24, cbor2.dumps(authentication)))
-    signature = cred.device_key.sign(
-        cbor2.dumps(["Signature1", _COSE_ES256_PROTECTED, b"", payload]),
-        ec.ECDSA(hashes.SHA256()),
+    signature = mdoc.sign_device_authentication(
+        cred.device_key, transcript, document["docType"], document["deviceSigned"]["nameSpaces"]
     )
-    r, s = decode_dss_signature(signature)
     document["deviceSigned"]["deviceAuth"]["deviceSignature"] = [
         _COSE_ES256_PROTECTED,
         {},
         None,
-        r.to_bytes(32, "big") + s.to_bytes(32, "big"),
+        signature,
     ]
     return cbor2.dumps(response)
 
