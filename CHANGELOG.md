@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.2 - 2026-07-24
+
+- `scripts/generate_credentials.py` builds its constructed entries through
+  `pylongfellow.mdoc.create_credential` and `create_certificate`, and validates the
+  `DeviceAuthentication` encoding against the vendored credential through
+  `verify_device_authentication`; the local COSE, certificate, and mdoc-assembly helpers
+  moved to pylongfellow 0.2.3 and are deleted here
+  ([#20](https://github.com/pipe23-org/zk-age-verifier/pull/20)).
+- The presenter re-signs each session's transcript through
+  `pylongfellow.mdoc.sign_device_authentication`
+  ([#20](https://github.com/pipe23-org/zk-age-verifier/pull/20)).
+- pylongfellow pin bumped to `>=0.2.3,<0.3`; credential fixtures regenerated
+  ([#20](https://github.com/pipe23-org/zk-age-verifier/pull/20)).
+
 ## 0.1.1 - 2026-07-23
 
 - The OpenAPI descriptions of `createSession` and `submitPresentation` now state the
