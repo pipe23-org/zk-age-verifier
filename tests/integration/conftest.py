@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from tests.conftest import ORIGIN, render_config
 from zk_age_verifier.app import create_app
-from zk_age_verifier.config import _default_circuit_cache_dir, load_config
+from zk_age_verifier.config import load_config
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
@@ -36,7 +36,7 @@ def client(
             yield live_client
         return
     config_file = tmp_path_factory.mktemp("config") / "config.toml"
-    config_file.write_text(render_config(circuit_cache_dir=str(_default_circuit_cache_dir())))
+    config_file.write_text(render_config())
     with TestClient(create_app(load_config(config_file))) as test_client:
         yield test_client
 

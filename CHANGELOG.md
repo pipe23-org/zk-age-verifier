@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- Ported to the pylongfellow 0.3 client API: one `Pylongfellow(backend="google-cpp")`
+  binds the backend at startup, `load_circuit` returns a handle, and `prove`/`verify`
+  are methods on the client. The module-level `mdoc.prove`/`mdoc.verify` calls and the
+  `mdoc.ZkSpec` type are gone; the service imports no backend-specific symbols.
+- The circuit ships as package data (`src/zk_age_verifier/circuits/v7-1attr.circuit`
+  with a sidecar record) and is loaded at startup, replacing generate-on-first-run.
+  The loader checks the blob against the sidecar `byte_sha256` and the sidecar spec
+  against the pinned system, version, and attribute count; the backend re-validates the
+  circuit hash at load.
+- Removed `circuit_cache_dir` from `[service]` config, the `XDG_CACHE_HOME` default, the
+  container cache directory and volume, and the Makefile cache-volume machinery. No
+  writable cache directory is needed.
+
 ## 0.1.2 - 2026-07-24
 
 - `scripts/generate_credentials.py` builds its constructed entries through

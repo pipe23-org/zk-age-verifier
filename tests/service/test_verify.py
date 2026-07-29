@@ -114,7 +114,7 @@ async def test_verified_happy_path(
     session: Session, held: HeldCircuit, config: Config, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     cert, chain = _anchor_cert()
-    monkeypatch.setattr(mdoc, "verify", lambda *_a, **_k: None)
+    monkeypatch.setattr(held.client, "verify", lambda *_a, **_k: None)
     body = _body(session, _device_response(held, chain))
     verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
     assert isinstance(verdict, VerdictVerified)
@@ -202,7 +202,7 @@ async def test_proof_invalid(
     def _raise(*_a: object, **_k: object) -> None:
         raise mdoc.VerifierError(mdoc.VerifierErrorCode.MDOC_VERIFIER_GENERAL_FAILURE)
 
-    monkeypatch.setattr(mdoc, "verify", _raise)
+    monkeypatch.setattr(held.client, "verify", _raise)
     body = _body(session, _device_response(held, chain))
     verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
     assert verdict == VerdictFailed(state="failed", reason="proof-invalid")
@@ -234,7 +234,7 @@ async def test_engine_error(
     def _boom(*_a: object, **_k: object) -> None:
         raise RuntimeError("unexpected")
 
-    monkeypatch.setattr(mdoc, "verify", _boom)
+    monkeypatch.setattr(held.client, "verify", _boom)
     body = _body(session, _device_response(held, chain))
     verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
     assert verdict == VerdictFailed(state="failed", reason="engine-error")

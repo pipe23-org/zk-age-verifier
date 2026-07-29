@@ -161,45 +161,6 @@ def test_bad_trust_source(kwargs: dict[str, str]) -> None:
         TrustSource(**kwargs)
 
 
-def test_circuit_cache_dir_default_when_xdg_unset(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
-    config = ServiceConfig(expected_origin="https://host")
-    assert config.circuit_cache_dir == Path.home() / ".cache" / "zk-age-verifier" / "circuits"
-
-
-def test_circuit_cache_dir_honours_xdg(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("XDG_CACHE_HOME", "/xdg")
-    config = ServiceConfig(expected_origin="https://host")
-    assert config.circuit_cache_dir == Path("/xdg/zk-age-verifier/circuits")
-
-
-def test_circuit_cache_dir_toml_override(tmp_path: Path) -> None:
-    body = (
-        "[service]\n"
-        'expected_origin = "https://host"\n'
-        'circuit_cache_dir = "/data/circuits"\n'
-        "[trust]\n"
-        'sources = [{ pem = "/etc/anchors" }]\n'
-    )
-    config = load_config(_write(tmp_path, body))
-    assert config.service.circuit_cache_dir == Path("/data/circuits")
-
-
-def test_circuit_cache_dir_env_overrides_toml(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv(f"{PREFIX}SERVICE__CIRCUIT_CACHE_DIR", "/env/circuits")
-    body = (
-        "[service]\n"
-        'expected_origin = "https://host"\n'
-        'circuit_cache_dir = "/data/circuits"\n'
-        "[trust]\n"
-        'sources = [{ pem = "/etc/anchors" }]\n'
-    )
-    config = load_config(_write(tmp_path, body))
-    assert config.service.circuit_cache_dir == Path("/env/circuits")
-
-
 def test_empty_sources_rejected() -> None:
     with pytest.raises(ValidationError):
         Config.model_validate(

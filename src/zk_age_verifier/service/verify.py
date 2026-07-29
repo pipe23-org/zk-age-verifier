@@ -197,7 +197,7 @@ async def _run_engine(
     except UntrustedIssuer as exc:
         raise _Failed("untrusted-issuer") from exc
     except mdoc.VerifierError as exc:
-        raise _Failed("proof-invalid", exc.code.name) from exc
+        raise _Failed("proof-invalid", exc.code.name if exc.code is not None else None) from exc
     except Exception as exc:
         log.exception("verify_engine_error")
         raise _Failed("engine-error") from exc

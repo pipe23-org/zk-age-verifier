@@ -61,7 +61,7 @@ def create_app(config: Config) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         """Load the circuit and anchors, run the sweeper, and tear it down on shutdown."""
-        held = load_held_circuit(config.service.circuit_cache_dir)
+        held = load_held_circuit()
         store = SessionStore(config, DcTransport(held))
         app.state.config = config
         app.state.held = held

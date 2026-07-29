@@ -13,7 +13,6 @@ import pytest
 from pylongfellow import mdoc
 
 from tests.integration.presenter import CREDENTIALS_DIR, load_credential
-from zk_age_verifier.config import _default_circuit_cache_dir
 from zk_age_verifier.core.engine.circuits import load_held_circuit
 
 # Proves and verifies bytes directly, never the socket: skipped under --transport=live.
@@ -25,16 +24,16 @@ NAMESPACE = "eu.europa.ec.av.1"
 def test_vendored_bytes_prove_and_verify() -> None:
     cred = load_credential("eu-av-vendored")
     transcript = (CREDENTIALS_DIR / cred.name / "transcript.bin").read_bytes()
-    held = load_held_circuit(_default_circuit_cache_dir())
+    held = load_held_circuit()
     attrs = [
         mdoc.RequestedAttribute(NAMESPACE, "age_over_18", cred.claims[NAMESPACE]["age_over_18"])
     ]
     timestamp = datetime.now(UTC).replace(microsecond=0)
 
-    proof = mdoc.prove(
-        held.circuit, cred.mdoc_bytes, cred.issuer_pk, transcript, attrs, timestamp, held.spec
+    proof = held.client.prove(
+        held.handle, cred.mdoc_bytes, cred.issuer_pk, transcript, attrs, timestamp
     )
 
-    mdoc.verify(
-        held.circuit, cred.issuer_pk, transcript, attrs, timestamp, proof, cred.doc_type, held.spec
+    held.client.verify(
+        held.handle, cred.issuer_pk, transcript, attrs, timestamp, proof, cred.doc_type
     )

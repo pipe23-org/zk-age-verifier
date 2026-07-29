@@ -21,7 +21,7 @@ async def test_health(config_file: Path) -> None:
 
 
 def test_lifespan_wires_store(config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("zk_age_verifier.app.load_held_circuit", lambda cache_dir: HELD_STUB)
+    monkeypatch.setattr("zk_age_verifier.app.load_held_circuit", lambda: HELD_STUB)
     app = create_app(load_config(config_file))
     with TestClient(app) as client:
         assert client.get("/health").status_code == 200

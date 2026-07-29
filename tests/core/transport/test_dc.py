@@ -3,7 +3,7 @@ import hashlib
 import cbor2
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
-from pylongfellow.mdoc import ZkSpec
+from pylongfellow.mdoc import CircuitSpec
 
 from zk_age_verifier.core.encoding import b64url_decode, b64url_encode
 from zk_age_verifier.core.engine.circuits import HeldCircuit, zk_system_id
@@ -58,7 +58,7 @@ def test_encryption_info_structure(recipient_key: ec.EllipticCurvePublicKey) -> 
     }
 
 
-def test_device_request_decode_back(spec: ZkSpec) -> None:
+def test_device_request_decode_back(spec: CircuitSpec) -> None:
     zsid = zk_system_id(spec)
     decoded = cbor2.loads(build_device_request(spec, zsid, ["age_over_18"]))
     assert set(decoded.keys()) == {"version", "docRequests"}
@@ -119,13 +119,12 @@ def test_dc_request_shape() -> None:
     assert b64url_decode(data["encryptionInfo"]) == b"\x03\x04"
 
 
-def test_claim_count_guard(spec: ZkSpec) -> None:
+def test_claim_count_guard(spec: CircuitSpec) -> None:
     with pytest.raises(ValueError, match="claim count"):
         build_device_request(spec, "zsid", [])
 
 
-def test_build_offer_state_and_request(spec: ZkSpec) -> None:
-    held = HeldCircuit(spec=spec, circuit=b"", zk_system_id=zk_system_id(spec))
+def test_build_offer_state_and_request(held: HeldCircuit) -> None:
     state, offer = DcTransport(held).build_offer(["age_over_18"])
 
     assert offer["mediation"] == "required"

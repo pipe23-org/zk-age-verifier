@@ -31,8 +31,6 @@ expected_origin = "https://av.example"
 pem = "/etc/zk-age-verifier/anchors"
 ```
 
-First start generates the ZK circuit and caches it on disk.
-
 ```
 python -m zk_age_verifier --config config.toml
 ```
@@ -77,7 +75,6 @@ Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
 - `session_cap` (default 1000) — live-session limit; `POST /sessions` returns 503 at the cap.
 - `timestamp_skew_seconds` (default 300) — proofs with a timestamp older than this fail `stale-proof`.
 - `cors_allowed_origins` (default `[]`) — origins for which CORS headers are emitted.
-- `circuit_cache_dir` (default `$XDG_CACHE_HOME/zk-age-verifier/circuits`) — where the generated circuit is cached.
 - `trust.sources` (required) — non-empty list; each entry sets one of `pem` (a PEM file or directory of issuer CA certs) or `etsi_xml` (an ETSI trusted-list URL).
 
 A presented document-signer certificate must carry the keyUsage extension asserting digitalSignature; an anchor accepted as the issuer of a chained leaf must assert keyCertSign.
