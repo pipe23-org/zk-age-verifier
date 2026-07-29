@@ -140,15 +140,14 @@ async def verify_presentation(
     await loop.run_in_executor(
         None,
         functools.partial(
-            mdoc.verify,
-            held.circuit,
+            held.client.verify,
+            held.handle,
             issuer_pk,
             transcript,
             attrs,
             document.timestamp,
             document.proof,
             DOC_TYPE,
-            held.spec,
         ),
     )
 

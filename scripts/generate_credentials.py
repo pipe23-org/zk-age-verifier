@@ -35,7 +35,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from pylongfellow import mdoc
 
-from zk_age_verifier.config import _default_circuit_cache_dir
 from zk_age_verifier.core.engine.circuits import load_held_circuit
 
 CREDENTIALS_DIR = Path(__file__).resolve().parents[1] / "tests/integration/credentials"
@@ -116,25 +115,24 @@ certificate = "leaf.pem"
 
 def _accept(credential: bytes, issuer_key: ec.EllipticCurvePrivateKey, transcript: bytes) -> None:
     """Prove and verify over the constructed credential, the acceptance check."""
-    held = load_held_circuit(_default_circuit_cache_dir())
+    held = load_held_circuit()
     numbers = issuer_key.public_key().public_numbers()
     document = cbor2.loads(credential)["documents"][0]
     doc_type = document["docType"]
     namespace = _age_namespace(document)
     attrs = [mdoc.RequestedAttribute(namespace, "age_over_18", b"\xf5")]
     timestamp = datetime.now(UTC).replace(microsecond=0)
-    proof = mdoc.prove(
-        held.circuit, credential, (numbers.x, numbers.y), transcript, attrs, timestamp, held.spec
+    proof = held.client.prove(
+        held.handle, credential, (numbers.x, numbers.y), transcript, attrs, timestamp
     )
-    mdoc.verify(
-        held.circuit,
+    held.client.verify(
+        held.handle,
         (numbers.x, numbers.y),
         transcript,
         attrs,
         timestamp,
         proof,
         doc_type,
-        held.spec,
     )
 
 

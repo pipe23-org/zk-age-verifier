@@ -1264,24 +1264,41 @@ wheels = [
 
 [[package]]
 name = "pylongfellow"
-version = "0.2.3"
-source = { registry = "https://pypi.org/simple" }
+version = "0.3.0"
+source = { directory = "../../pylongfellow/repo" }
 dependencies = [
     { name = "cbor2" },
     { name = "cffi" },
     { name = "cryptography" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f0/01/69ac7c2545087ed83117ddc1e88903bfa983e798de678bb21c249b5e6fd5/pylongfellow-0.2.3.tar.gz", hash = "sha256:26345b663984b4930a62cffd52b9d0f2a88b3ddf351e50bbab9e3a6297469f39", size = 13603792, upload-time = "2026-07-24T00:53:52.54Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/ad/f1eaee2b6f3806bb92124ba84f7278506c83a01765cc84fa20bc066ae5a5/pylongfellow-0.2.3-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:24eaa0430907ba60c67cbe86a500c44b5cfeec7a0c5a157b6749a9b29ce69f83", size = 2053832, upload-time = "2026-07-24T00:53:39.356Z" },
-    { url = "https://files.pythonhosted.org/packages/53/5e/3c225d3819a5eb6520983a47ee8abf3a12633689f9e16f5c84ee76ffbef0/pylongfellow-0.2.3-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:044fc3578aa6a903d5eccc016497b95ed7ba8aa9e6c2bcfb4df06c1b960fe08b", size = 3718484, upload-time = "2026-07-24T00:53:41.097Z" },
-    { url = "https://files.pythonhosted.org/packages/a9/f5/aafeadfab870e56a30d76971efabae84cfccf7cfa13b2219be62b695ac9b/pylongfellow-0.2.3-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:03056d2e53bf5b57e9318a125dc7044a30b37a7cbe84383742b1c9a95ab8d406", size = 2053866, upload-time = "2026-07-24T00:53:42.592Z" },
-    { url = "https://files.pythonhosted.org/packages/d6/cf/781f7bb566f4a6b61ea6ed03e1795118ddfcd546fa29b3609d694a8341a9/pylongfellow-0.2.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:f41563406948e389a554531df0dfcd5603c3b7f1f58e2264dc5390bf3d98b42c", size = 3718484, upload-time = "2026-07-24T00:53:44.404Z" },
-    { url = "https://files.pythonhosted.org/packages/ec/e2/3a7e61c1eb24bed333f7203e4d5617a738bf23f26416575843153757ff65/pylongfellow-0.2.3-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:8f3a2be21551ddc535e113f320be7802232bce8747285f88b498edba9f24393e", size = 2053865, upload-time = "2026-07-24T00:53:46.393Z" },
-    { url = "https://files.pythonhosted.org/packages/67/a5/3b74accd2a2f39fa8011c61ee735c5928ba1c89cde4dbfd1e2e156222cc3/pylongfellow-0.2.3-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:3c06eb5666771b9fbf66908256dec597301ee385e3e23fc600797b33d4a26656", size = 3718487, upload-time = "2026-07-24T00:53:47.78Z" },
-    { url = "https://files.pythonhosted.org/packages/ed/0e/885642a751db3b083870ee3898c14e5be086847d4376ef5af7016f487d29/pylongfellow-0.2.3-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a69a5994d0fbc6ceb3d188c175621b1ce75695633f891d7c9ac26377aedb976e", size = 2053870, upload-time = "2026-07-24T00:53:49.24Z" },
-    { url = "https://files.pythonhosted.org/packages/8b/2b/5e495a974db4d604a04243b5c4fb4488e95988da9417faf88bd5457850f9/pylongfellow-0.2.3-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:d3a6c39fcd52369ee6354de6c99335317717a577e73adb5580450ade6cde0e33", size = 3718475, upload-time = "2026-07-24T00:53:50.725Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "cbor2", specifier = ">=6" },
+    { name = "cffi", specifier = ">=2.0" },
+    { name = "cryptography", specifier = ">=49" },
+    { name = "zstandard", marker = "extra == 'isrg-rust'" },
 ]
+provides-extras = ["isrg-rust"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "interrogate" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extras = ["python"] },
+    { name = "mypy" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "ruff" },
+    { name = "types-cffi", specifier = ">=2.0.0.20260518" },
+    { name = "zstandard" },
+]
+docs = [
+    { name = "interrogate" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extras = ["python"] },
+]
+test = [{ name = "pytest", specifier = ">=8" }]
 
 [[package]]
 name = "pymdown-extensions"
@@ -1676,7 +1693,7 @@ requires-dist = [
     { name = "granian" },
     { name = "pydantic-settings" },
     { name = "pyhpke", specifier = ">=0.6.5" },
-    { name = "pylongfellow", specifier = ">=0.2.3,<0.3" },
+    { name = "pylongfellow", directory = "../../pylongfellow/repo" },
     { name = "structlog" },
 ]
 

@@ -32,9 +32,14 @@ dependencies = [
     "granian",
     "pydantic-settings",
     "pyhpke>=0.6.5",
-    "pylongfellow>=0.2.3,<0.3",
+    "pylongfellow>=0.3.0,<0.4",
     "structlog",
 ]
+
+# Temporary path override until pylongfellow 0.3.0 is published to PyPI; drop this
+# and rely on the version pin above once it is.
+[tool.uv.sources]
+pylongfellow = { path = "../../pylongfellow/repo" }
 
 [project.urls]
 Homepage = "https://github.com/pipe23-org/zk-age-verifier"

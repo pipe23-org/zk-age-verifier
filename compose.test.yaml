@@ -7,9 +7,3 @@ services:
     volumes:
       - ${TEST_CONTAINER_CONFIG:?run via make test-container}:/etc/zk-age-verifier/config.toml:ro
       - ${TEST_CONTAINER_ANCHOR:?run via make test-container}:/etc/zk-age-verifier/anchors:ro
-      - circuits:/home/app/.cache/zk-age-verifier/circuits
-
-volumes:
-  circuits:
-    external: true
-    name: zk_age_verifier_test_circuits

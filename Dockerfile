@@ -15,10 +15,6 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 FROM python:3.11-slim-bookworm
 RUN useradd --create-home app
-# The path mirrors config.py's derived default and the compose volume mounts depend
-# on it. An empty named volume seeds its ownership from this directory at first
-# mount, which lets the non-root app user write the mounted circuit cache.
-RUN install -d -o app -g app /home/app/.cache/zk-age-verifier/circuits
 COPY --from=builder --chown=app:app /app /app
 ENV PATH="/app/.venv/bin:$PATH"
 USER app

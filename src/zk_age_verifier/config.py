@@ -14,7 +14,6 @@ Source priority, highest first: constructor arguments, environment variables,
 the TOML file, then model defaults.
 """
 
-import os
 import tomllib
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -58,19 +57,8 @@ def validate_origin(value: str) -> str:
     return value
 
 
-def _default_circuit_cache_dir() -> Path:
-    """Return the default circuit cache directory, honouring ``XDG_CACHE_HOME``.
-
-    The container image and compose files spell this path literally (Dockerfile,
-    compose.test.yaml, the site-dc-mdoc compose); a change here must move them too.
-    """
-    cache_home = os.environ.get("XDG_CACHE_HOME")
-    base = Path(cache_home) if cache_home else Path.home() / ".cache"
-    return base / "zk-age-verifier" / "circuits"
-
-
 class ServiceConfig(BaseModel):
-    """The ``[service]`` table: origin binding, session hygiene, circuit cache."""
+    """The ``[service]`` table: origin binding and session hygiene."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -79,7 +67,6 @@ class ServiceConfig(BaseModel):
     session_cap: int = 1000
     timestamp_skew_seconds: int = 300
     cors_allowed_origins: list[str] = Field(default_factory=list)
-    circuit_cache_dir: Path = Field(default_factory=_default_circuit_cache_dir)
 
     @field_validator("expected_origin")
     @classmethod

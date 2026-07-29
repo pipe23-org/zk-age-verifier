@@ -23,7 +23,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding, load_pem_private_key
 from pylongfellow import mdoc
 
-from zk_age_verifier.config import _default_circuit_cache_dir
 from zk_age_verifier.core.encoding import b64url_decode, b64url_encode
 from zk_age_verifier.core.engine.circuits import HeldCircuit, load_held_circuit
 from zk_age_verifier.core.transport.dc import (
@@ -140,8 +139,8 @@ def load_credential(name: str = DEFAULT_CREDENTIAL) -> Credential:
 
 @functools.cache
 def _held_circuit() -> HeldCircuit:
-    """Resolve the pinned circuit through the same cache path as the verifier."""
-    return load_held_circuit(_default_circuit_cache_dir())
+    """Resolve the pinned circuit through the same loader as the verifier."""
+    return load_held_circuit()
 
 
 def _sign_device_transcript(cred: Credential, transcript: bytes) -> bytes:
@@ -272,9 +271,7 @@ def present(
     timestamp = datetime.now(UTC).replace(microsecond=0)
     if knobs.timestamp_offset is not None:
         timestamp += knobs.timestamp_offset
-    proof = mdoc.prove(
-        held.circuit, mdoc_bytes, cred.issuer_pk, transcript, attrs, timestamp, held.spec
-    )
+    proof = held.client.prove(held.handle, mdoc_bytes, cred.issuer_pk, transcript, attrs, timestamp)
     if knobs.corrupt_proof:
         proof = proof[:-1] + bytes([proof[-1] ^ 0xFF])
 

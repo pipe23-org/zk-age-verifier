@@ -1,9 +1,11 @@
 from pathlib import Path
 
 import pytest
-from pylongfellow.mdoc import ZkSpec
+from pylongfellow import Pylongfellow
+from pylongfellow.backends import CircuitHandle
+from pylongfellow.mdoc import CircuitSpec
 
-from zk_age_verifier.core.engine.circuits import HeldCircuit
+from zk_age_verifier.core.engine.circuits import HeldCircuit, load_held_circuit
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -25,21 +27,30 @@ TEST_ANCHOR_PEM = Path(__file__).parent / "integration" / "credentials" / "test-
 
 ORIGIN = "https://chat.example.org"
 
-# A stand-in HeldCircuit for tests that stub circuit loading: a fixed spec and an
-# empty circuit, so no generation runs. Its zk_system_id is the identity the spec
-# fields imply, not one resolved from pylongfellow's table.
+# A stand-in HeldCircuit for tests that stub circuit loading: a fixed spec and a
+# synthetic handle over a real client, so no artifact is read. Its zk_system_id is
+# the identity the spec fields imply, not one resolved from the vendored artifact.
+_STUB_SPEC = CircuitSpec(
+    system="longfellow-libzk-v1",
+    circuit_hash="abc123",
+    num_attributes=1,
+    version=7,
+    block_enc_hash=1,
+    block_enc_sig=1,
+)
+_STUB_CLIENT = Pylongfellow(backend="google-cpp")
 HELD_STUB = HeldCircuit(
-    spec=ZkSpec(
-        system="longfellow-libzk-v1",
-        circuit_hash="abc123",
-        num_attributes=1,
-        version=7,
-        block_enc_hash=1,
-        block_enc_sig=1,
-    ),
-    circuit=b"",
+    spec=_STUB_SPEC,
+    client=_STUB_CLIENT,
+    handle=CircuitHandle(spec=_STUB_SPEC, backend=_STUB_CLIENT.backend, state=None),
     zk_system_id="longfellow-libzk-v1_7_1_1_1_abc123",
 )
+
+
+@pytest.fixture(scope="session")
+def held() -> HeldCircuit:
+    """Load the vendored circuit once for the whole session."""
+    return load_held_circuit()
 
 
 def _toml_scalar(value: object) -> str:

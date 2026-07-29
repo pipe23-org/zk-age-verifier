@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import cbor2
 from cryptography.hazmat.primitives.asymmetric import ec
 from pyhpke import AEADId, CipherSuite, KDFId, KEMId, KEMKey
-from pylongfellow.mdoc import ZkSpec
+from pylongfellow.mdoc import CircuitSpec
 
 from zk_age_verifier.core.constants import DOC_TYPE
 from zk_age_verifier.core.encoding import b64url_decode, b64url_encode
@@ -65,7 +65,7 @@ def build_encryption_info(nonce: bytes, recipient_key: ec.EllipticCurvePublicKey
 
 
 def build_device_request(
-    spec: ZkSpec,
+    spec: CircuitSpec,
     zk_system_id: str,
     claims: Sequence[str],
     doc_type: str = DOC_TYPE,

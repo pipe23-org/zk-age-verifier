@@ -6,7 +6,6 @@ PORT := 8791
 ANCHOR := $(CURDIR)/tests/integration/credentials/test-anchor.pem
 
 CONTAINER_PORT := 8792
-CONTAINER_CACHE := zk_age_verifier_test_circuits
 CONTAINER_COMPOSE := docker compose -f compose.yaml -f compose.test.yaml
 
 .PHONY: test-live test-container
@@ -39,9 +38,7 @@ test-live:
 # (image build, entrypoint, mounts) on top of what test-live covers.
 # The image runs as non-root user app (uid 1000); the mounted config must be
 # world-readable because mktemp -d dirs are mode 700. The trust anchor and config
-# name the anchor by its in-container path. The circuit cache is an external named
-# volume so first-boot generation is paid once; the post-run check asserts the cache
-# actually landed in the volume (the mount path must match the app's derived default).
+# name the anchor by its in-container path.
 test-container:
 	@tmp=$$(mktemp -d); \
 	chmod 755 "$$tmp"; \
@@ -53,7 +50,6 @@ test-container:
 	export TEST_CONTAINER_ANCHOR="$(ANCHOR)"; \
 	trap '$(CONTAINER_COMPOSE) down >/dev/null 2>&1' EXIT; \
 	$(CONTAINER_COMPOSE) build || exit 1; \
-	docker volume create $(CONTAINER_CACHE) >/dev/null; \
 	$(CONTAINER_COMPOSE) up -d || exit 1; \
 	up=0; i=0; \
 	while [ $$i -lt 180 ]; do \
@@ -63,9 +59,5 @@ test-container:
 	if [ $$up -ne 1 ]; then echo "container did not answer /health"; $(CONTAINER_COMPOSE) logs; exit 1; fi; \
 	uv run pytest tests/integration --transport=live --base-url=http://127.0.0.1:$(CONTAINER_PORT) --no-cov; \
 	status=$$?; \
-	if [ $$status -eq 0 ]; then \
-		$(CONTAINER_COMPOSE) exec -T app sh -c 'ls -A /home/app/.cache/zk-age-verifier/circuits | grep -q .' \
-			|| { echo "circuit cache volume is empty after run"; status=1; }; \
-	fi; \
 	if [ $$status -ne 0 ]; then echo "--- compose logs ---"; $(CONTAINER_COMPOSE) logs; fi; \
 	exit $$status
