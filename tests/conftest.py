@@ -50,7 +50,7 @@ HELD_STUB = HeldCircuit(
 @pytest.fixture(scope="session")
 def held() -> HeldCircuit:
     """Load the vendored circuit once for the whole session."""
-    return load_held_circuit()
+    return load_held_circuit(backend="google-cpp")
 
 
 def _toml_scalar(value: object) -> str:

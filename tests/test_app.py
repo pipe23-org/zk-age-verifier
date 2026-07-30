@@ -5,7 +5,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from tests.conftest import HELD_STUB
+from tests.conftest import HELD_STUB, render_config
 from zk_age_verifier.app import CONFIG_ENV_VAR, app_factory, create_app
 from zk_age_verifier.config import load_config
 from zk_age_verifier.service.sessions import SessionStore
@@ -21,12 +21,21 @@ async def test_health(config_file: Path) -> None:
 
 
 def test_lifespan_wires_store(config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("zk_age_verifier.app.load_held_circuit", lambda: HELD_STUB)
+    monkeypatch.setattr("zk_age_verifier.app.load_held_circuit", lambda backend: HELD_STUB)
     app = create_app(load_config(config_file))
     with TestClient(app) as client:
         assert client.get("/health").status_code == 200
         assert isinstance(app.state.store, SessionStore)
         assert app.state.held is HELD_STUB
+
+
+def test_unknown_backend_fails_startup(tmp_path: Path) -> None:
+    path = tmp_path / "config.toml"
+    path.write_text(render_config(backend="no-such-backend"))
+    app = create_app(load_config(path))
+    with pytest.raises(ValueError, match="unknown backend"):
+        with TestClient(app):
+            pass
 
 
 def test_app_factory_reads_config_from_env(

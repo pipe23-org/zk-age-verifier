@@ -1,0 +1,11 @@
+{
+  "system": "longfellow-libzk-v1",
+  "circuit_id": "137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6",
+  "computed_by": "google-cpp @ fe83ec6",
+  "byte_sha256": "12050d8baaa37eb8225a3dcf5cb6139a0ccd4fa63a0e0ac2555ecb4810ada8a3",
+  "version": 6,
+  "num_attributes": 1,
+  "block_enc_hash": 4096,
+  "block_enc_sig": 2945,
+  "origin": "google/longfellow-zk@fe83ec6 lib/circuits/mdoc/circuits/137e5a75ce72735a37c8a72da1a8a0a5df8d13365c2ae3d2c2bd6a0e7197c7c6"
+}

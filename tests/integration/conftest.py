@@ -19,6 +19,21 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(skip_live)
 
 
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    """Run every in-process integration test against each verifier backend.
+
+    The presenter's prover stays fixed: a wallet's proving implementation is
+    outside the service's knowledge, so only the verifier varies. The live
+    transport runs the suite once, against the server as deployed.
+    """
+    if "verifier_backend" not in metafunc.fixturenames:
+        return
+    if metafunc.config.getoption("--transport") == "live":
+        metafunc.parametrize("verifier_backend", ["as-deployed"], scope="session")
+        return
+    metafunc.parametrize("verifier_backend", ["google-cpp", "isrg-rust"], scope="session")
+
+
 @pytest.fixture(scope="session")
 def origin() -> str:
     return ORIGIN
@@ -26,7 +41,9 @@ def origin() -> str:
 
 @pytest.fixture(scope="session")
 def client(
-    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
+    request: pytest.FixtureRequest,
+    tmp_path_factory: pytest.TempPathFactory,
+    verifier_backend: str,
 ) -> Iterator[httpx.Client]:
     if request.config.getoption("--transport") == "live":
         base_url = request.config.getoption("--base-url")
@@ -36,7 +53,7 @@ def client(
             yield live_client
         return
     config_file = tmp_path_factory.mktemp("config") / "config.toml"
-    config_file.write_text(render_config())
+    config_file.write_text(render_config(backend=verifier_backend))
     with TestClient(create_app(load_config(config_file))) as test_client:
         yield test_client
 

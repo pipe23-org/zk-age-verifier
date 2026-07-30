@@ -15,7 +15,6 @@ SYSTEM = "longfellow-libzk-v1"
 CIRCUIT_VERSION = 7
 NUM_ATTRIBUTES = 1
 
-_BACKEND = "google-cpp"
 _ARTIFACT = "v7-1attr"
 
 
@@ -54,7 +53,7 @@ class HeldCircuit:
     zk_system_id: str
 
 
-def load_held_circuit() -> HeldCircuit:
+def load_held_circuit(*, backend: str) -> HeldCircuit:
     """Load the vendored circuit artifact, verify its integrity, and bind a client.
 
     The circuit blob and its sidecar ship as package data. The blob is checked
@@ -62,13 +61,22 @@ def load_held_circuit() -> HeldCircuit:
     against the pinned system, version, and attribute count. The bound backend
     re-validates that the spec's ``circuit_hash`` matches the blob at load.
 
+    Args:
+        backend: pylongfellow backend registry name. Constructing the client
+            rejects an unknown name and probes availability, so an unusable
+            backend fails here, at startup.
+
     Returns:
         The held circuit.
 
     Raises:
+        ValueError: ``backend`` is not a registered backend name.
+        pylongfellow.backends.BackendUnavailableError: The named backend is not
+            built into the installed pylongfellow.
         RuntimeError: The blob does not match the sidecar digest, or the sidecar
             spec does not match the pin.
     """
+    client = Pylongfellow(backend=backend)
     artifacts = files("zk_age_verifier").joinpath("circuits")
     blob = artifacts.joinpath(f"{_ARTIFACT}.circuit").read_bytes()
     sidecar = json.loads(artifacts.joinpath(f"{_ARTIFACT}.json").read_text())
@@ -98,6 +106,5 @@ def load_held_circuit() -> HeldCircuit:
             f"{NUM_ATTRIBUTES}attr"
         )
 
-    client = Pylongfellow(backend=_BACKEND)
     handle = client.load_circuit(spec, blob)
     return HeldCircuit(spec=spec, client=client, handle=handle, zk_system_id=zk_system_id(spec))

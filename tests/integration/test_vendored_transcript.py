@@ -24,7 +24,7 @@ NAMESPACE = "eu.europa.ec.av.1"
 def test_vendored_bytes_prove_and_verify() -> None:
     cred = load_credential("eu-av-vendored")
     transcript = (CREDENTIALS_DIR / cred.name / "transcript.bin").read_bytes()
-    held = load_held_circuit()
+    held = load_held_circuit(backend="google-cpp")
     attrs = [
         mdoc.RequestedAttribute(NAMESPACE, "age_over_18", cred.claims[NAMESPACE]["age_over_18"])
     ]

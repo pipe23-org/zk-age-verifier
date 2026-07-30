@@ -25,6 +25,10 @@ log = structlog.get_logger(__name__)
 # CBOR true, the disclosed value every age check requires.
 _CLAIM_TRUE = b"\xf5"
 
+# CBOR empty map: the DeviceNameSpaces value assumed when the wire carries
+# none (https://github.com/pipe23-org/pylongfellow/issues/29).
+_ASSUMED_DEVICE_NAMESPACES = b"\xa0"
+
 
 class MalformedPresentation(Exception):
     """Raised when the DeviceResponse or its ZkDocument is malformed."""
@@ -63,6 +67,9 @@ class ZkDocument:
         issuer_signed: The disclosed claims, namespace to element listing.
         device_signed: Expected empty; a claim listing if a wallet populates it.
         mso_x5chain: The issuer DS certificate.
+        device_name_spaces_bytes: Inner bytes of the tag-24 DeviceNameSpacesBytes
+            the proof is bound to; always ``None`` from the parser, since the
+            response format has no field that carries it.
     """
 
     proof: bytes
@@ -72,6 +79,7 @@ class ZkDocument:
     issuer_signed: dict[str, object]
     device_signed: object
     mso_x5chain: x509.Certificate
+    device_name_spaces_bytes: bytes | None
 
 
 @dataclass(frozen=True)
@@ -135,6 +143,13 @@ async def verify_presentation(
 
     issuer_pk = anchors.resolve(document.mso_x5chain)
 
+    # Where the wire carries no DeviceNameSpacesBytes, the service substitutes
+    # the empty map — a stated assumption about deployed devices
+    # (https://github.com/pipe23-org/pylongfellow/issues/29).
+    device_namespaces = document.device_name_spaces_bytes
+    if device_namespaces is None:
+        device_namespaces = _ASSUMED_DEVICE_NAMESPACES
+
     attrs = [mdoc.RequestedAttribute(DOC_TYPE, claim, _CLAIM_TRUE) for claim in claims]
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(
@@ -148,6 +163,7 @@ async def verify_presentation(
             document.timestamp,
             document.proof,
             DOC_TYPE,
+            device_namespaces=device_namespaces,
         ),
     )
 
@@ -226,6 +242,8 @@ def _parse_zk_document(zk_doc: object) -> ZkDocument:
         issuer_signed=issuer_signed,
         device_signed=device_signed,
         mso_x5chain=mso_x5chain,
+        # The response format has no field to read this from.
+        device_name_spaces_bytes=None,
     )
 
 

@@ -139,8 +139,11 @@ def load_credential(name: str = DEFAULT_CREDENTIAL) -> Credential:
 
 @functools.cache
 def _held_circuit() -> HeldCircuit:
-    """Resolve the pinned circuit through the same loader as the verifier."""
-    return load_held_circuit()
+    """Resolve the pinned circuit through the same loader as the verifier.
+
+    The prover stays fixed while the verifier under test varies.
+    """
+    return load_held_circuit(backend="google-cpp")
 
 
 def _sign_device_transcript(cred: Credential, transcript: bytes) -> bytes:

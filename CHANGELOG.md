@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- pylongfellow 0.4.0: both verifier backends ship in the default install.
+- `[service]` gains `backend` (default `google-cpp`; env
+  `ZK_AGE_VERIFIER_SERVICE__BACKEND`), the pylongfellow backend the service verifies
+  with. Unknown or unbuilt names fail startup. Per-backend scope: `docs/backends.md`.
+- `ZkDocument` gains `device_name_spaces_bytes: bytes | None`; where `None`, the service
+  supplies the empty device-namespace map to the verifier as a stated assumption
+  ([pipe23-org/pylongfellow#29](https://github.com/pipe23-org/pylongfellow/issues/29)).
+- In-process integration tests run against both verifier backends; the presenter's
+  prover stays fixed. A new test verifies the vendored upstream example proof with both
+  backends, isrg-rust under the assumed empty map; input provenance in
+  `tests/data/README.md`.
 - Ported to the pylongfellow 0.3 client API: one `Pylongfellow(backend="google-cpp")`
   binds the backend at startup, `load_circuit` returns a handle, and `prove`/`verify`
   are methods on the client. The module-level `mdoc.prove`/`mdoc.verify` calls and the

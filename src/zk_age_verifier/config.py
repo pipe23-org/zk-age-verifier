@@ -58,11 +58,12 @@ def validate_origin(value: str) -> str:
 
 
 class ServiceConfig(BaseModel):
-    """The ``[service]`` table: origin binding and session hygiene."""
+    """The ``[service]`` table: origin binding, backend selection, and session hygiene."""
 
     model_config = ConfigDict(extra="forbid")
 
     expected_origin: str
+    backend: str = "google-cpp"
     session_ttl_seconds: int = 300
     session_cap: int = 1000
     timestamp_skew_seconds: int = 300

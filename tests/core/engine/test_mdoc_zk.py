@@ -79,6 +79,7 @@ def test_parse_device_response_happy() -> None:
         {"elementIdentifier": "age_over_18", "elementValue": True}
     ]
     assert isinstance(document.mso_x5chain, x509.Certificate)
+    assert document.device_name_spaces_bytes is None
 
 
 def test_parse_device_response_not_cbor() -> None:

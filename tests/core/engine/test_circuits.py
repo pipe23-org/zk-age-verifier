@@ -47,7 +47,7 @@ def _stage(tmp_path: Path, blob: bytes, sidecar: dict[str, object]) -> None:
 
 
 def test_load_held_circuit_reads_vendored_artifact() -> None:
-    held = load_held_circuit()
+    held = load_held_circuit(backend="google-cpp")
     assert isinstance(held, HeldCircuit)
     assert held.spec.system == SYSTEM
     assert held.spec.version == CIRCUIT_VERSION
@@ -65,7 +65,7 @@ def test_load_held_circuit_integrity_failure_raises(
     _stage(tmp_path, blob, sidecar)
     monkeypatch.setattr(circuits, "files", lambda package: tmp_path)
     with pytest.raises(RuntimeError, match="circuit blob hashes to"):
-        load_held_circuit()
+        load_held_circuit(backend="google-cpp")
 
 
 def test_load_held_circuit_pin_mismatch_raises(
@@ -76,7 +76,7 @@ def test_load_held_circuit_pin_mismatch_raises(
     _stage(tmp_path, blob, sidecar)
     monkeypatch.setattr(circuits, "files", lambda package: tmp_path)
     with pytest.raises(RuntimeError, match="pinned to longfellow-libzk-v1 v7"):
-        load_held_circuit()
+        load_held_circuit(backend="google-cpp")
 
 
 def test_annex_example_is_a_skew_tripwire() -> None:
@@ -102,5 +102,5 @@ def test_annex_example_is_a_skew_tripwire() -> None:
 
 
 def test_zk_system_id_from_spec() -> None:
-    held = load_held_circuit()
+    held = load_held_circuit(backend="google-cpp")
     assert zk_system_id(held.spec) == HELD_ZK_SYSTEM_ID
