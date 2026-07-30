@@ -25,10 +25,8 @@ log = structlog.get_logger(__name__)
 # CBOR true, the disclosed value every age check requires.
 _CLAIM_TRUE = b"\xf5"
 
-# CBOR empty map: the DeviceNameSpaces value this service assumes when the wire
-# carries none. Deployed provers fix the same value on their side. See
-# https://github.com/pipe23-org/pylongfellow/issues/29 for the record of the
-# format gap and the backends' disagreement over this input.
+# CBOR empty map: the DeviceNameSpaces value assumed when the wire carries
+# none (https://github.com/pipe23-org/pylongfellow/issues/29).
 _ASSUMED_DEVICE_NAMESPACES = b"\xa0"
 
 
@@ -70,10 +68,8 @@ class ZkDocument:
         device_signed: Expected empty; a claim listing if a wallet populates it.
         mso_x5chain: The issuer DS certificate.
         device_name_spaces_bytes: Inner bytes of the tag-24 DeviceNameSpacesBytes
-            the proof is bound to. The ZK response format defines no field that
-            carries this value, so it is ``None`` on every presentation the
-            format can express; the field models the verifier's input set, not
-            the serialization.
+            the proof is bound to; always ``None`` from the parser, since the
+            response format has no field that carries it.
     """
 
     proof: bytes
@@ -147,12 +143,9 @@ async def verify_presentation(
 
     issuer_pk = anchors.resolve(document.mso_x5chain)
 
-    # The stated-assumption injection point. The wire cannot carry
-    # DeviceNameSpacesBytes, so when the parsed document holds none the service
-    # substitutes the empty map here — an assumption about what deployed
-    # devices signed, stated in this repository rather than defaulted inside
-    # pylongfellow. google-cpp ignores the parameter; isrg-rust requires and
-    # binds it (https://github.com/pipe23-org/pylongfellow/issues/29).
+    # Where the wire carries no DeviceNameSpacesBytes, the service substitutes
+    # the empty map — a stated assumption about deployed devices
+    # (https://github.com/pipe23-org/pylongfellow/issues/29).
     device_namespaces = document.device_name_spaces_bytes
     if device_namespaces is None:
         device_namespaces = _ASSUMED_DEVICE_NAMESPACES
@@ -249,8 +242,7 @@ def _parse_zk_document(zk_doc: object) -> ZkDocument:
         issuer_signed=issuer_signed,
         device_signed=device_signed,
         mso_x5chain=mso_x5chain,
-        # The response format defines no field to read this from; every
-        # expressible presentation parses to explicit absence.
+        # The response format has no field to read this from.
         device_name_spaces_bytes=None,
     )
 

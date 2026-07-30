@@ -1,16 +1,9 @@
-"""The mdl specimen verified by each backend, below the service's parser.
+"""The vendored upstream example proof verified by each backend.
 
-The specimen is ``tests/data/upstream-verifier-service-request.json``: a
-complete ZK DeviceResponse whose proof google's reference stack produced,
-bound to the transcript the request carries, with no device-namespaces field
-anywhere on the wire. The strict parser rejects its shape
-(``test_upstream_response.py``), so these tests feed the pylongfellow client
-directly. google-cpp verifying the proof is the control for the inputs; the
-isrg-rust case verifies the same proof under the service's assumed empty
-device-namespace map, the input the wire cannot carry
-(https://github.com/pipe23-org/pylongfellow/issues/29). Each case pins an
-observation about backend behaviour over these bytes; a failure means the
-observation no longer holds, not that the suite mis-ran.
+The example request carries a complete proof but a wire shape the service's
+parser rejects (``test_upstream_response.py``), so these tests call the
+pylongfellow client directly. The isrg-rust case supplies the assumed empty
+device-namespace map (https://github.com/pipe23-org/pylongfellow/issues/29).
 """
 
 import base64

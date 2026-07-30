@@ -71,7 +71,7 @@ of the service.
 Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
 
 - `expected_origin` (required) — the exact `scheme://host[:port]` origin the presentation asserts.
-- `backend` (default `google-cpp`) — the pylongfellow verifier backend, `google-cpp` or `isrg-rust`; an unknown or unbuilt name fails startup. Per-backend verification scope is documented in the Backends page of the full documentation.
+- `backend` (default `google-cpp`) — the pylongfellow verifier backend, `google-cpp` or `isrg-rust`; an unknown or unbuilt name fails startup.
 - `session_ttl_seconds` (default 300) — session lifetime.
 - `session_cap` (default 1000) — live-session limit; `POST /sessions` returns 503 at the cap.
 - `timestamp_skew_seconds` (default 300) — proofs with a timestamp older than this fail `stale-proof`.

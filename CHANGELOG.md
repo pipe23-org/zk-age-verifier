@@ -2,28 +2,17 @@
 
 ## Unreleased
 
-- pylongfellow 0.4.0: both verifier backends ship in the default install; no extra or
-  separate wheel.
-- `[service]` gains `backend` (default `google-cpp`) — the pylongfellow registry name the
-  service verifies with, overridable as `ZK_AGE_VERIFIER_SERVICE__BACKEND`. An unknown or
-  unbuilt name fails startup. Per-backend verification scope is documented in
-  `docs/backends.md`.
-- `ZkDocument` gains `device_name_spaces_bytes: bytes | None`. The ZK response format
-  defines no field that carries the value, so every expressible presentation parses to
-  explicit absence; where it is absent the service substitutes the empty device-namespace
-  map at one stated-assumption injection point before the verify call
+- pylongfellow 0.4.0: both verifier backends ship in the default install.
+- `[service]` gains `backend` (default `google-cpp`; env
+  `ZK_AGE_VERIFIER_SERVICE__BACKEND`), the pylongfellow backend the service verifies
+  with. Unknown or unbuilt names fail startup. Per-backend scope: `docs/backends.md`.
+- `ZkDocument` gains `device_name_spaces_bytes: bytes | None`; where `None`, the service
+  supplies the empty device-namespace map to the verifier as a stated assumption
   ([pipe23-org/pylongfellow#29](https://github.com/pipe23-org/pylongfellow/issues/29)).
-  google-cpp ignores the parameter; isrg-rust requires and binds it.
-- In-process integration tests run against both verifier backends; the presenter proves
-  with one fixed backend throughout, since a wallet's proving implementation is outside
-  the service's knowledge and does not co-vary with the configured verifier.
-- A new test verifies the proof carried by the vendored upstream example request with
-  both backends. The service's parser rejects that request's wire shape, so the test
-  calls the pylongfellow client directly; google-cpp verifies the proof, and isrg-rust
-  verifies the same proof when given the assumed empty device-namespace map. The inputs
-  the request does not carry — the v6 circuit and the recorded issuer key, timestamp,
-  and attributes — are copied from pylongfellow's differential corpus, with provenance
-  in `tests/data/README.md`.
+- In-process integration tests run against both verifier backends; the presenter's
+  prover stays fixed. A new test verifies the vendored upstream example proof with both
+  backends, isrg-rust under the assumed empty map; input provenance in
+  `tests/data/README.md`.
 - Ported to the pylongfellow 0.3 client API: one `Pylongfellow(backend="google-cpp")`
   binds the backend at startup, `load_circuit` returns a handle, and `prove`/`verify`
   are methods on the client. The module-level `mdoc.prove`/`mdoc.verify` calls and the
