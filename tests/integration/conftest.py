@@ -22,10 +22,12 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Run every in-process integration test against each verifier backend.
 
-    The presenter side always proves with google-cpp (the shipped wallet
-    stack); the parameter selects the backend the service under test verifies
-    with. A live server's backend is fixed by its own config, so the live
-    transport runs the suite once, against the server as deployed.
+    The parameter selects the backend the service under test verifies with.
+    The presenter proves with one fixed backend throughout: a wallet's proving
+    implementation is outside the service's knowledge and control, so the
+    verifier parameter varies alone. A live server's backend is fixed by its
+    own config, so the live transport runs the suite once, against the server
+    as deployed.
     """
     if "verifier_backend" not in metafunc.fixturenames:
         return

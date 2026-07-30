@@ -15,7 +15,8 @@
   ([pipe23-org/pylongfellow#29](https://github.com/pipe23-org/pylongfellow/issues/29)).
   google-cpp ignores the parameter; isrg-rust requires and binds it.
 - In-process integration tests run against both verifier backends; the presenter proves
-  with google-cpp throughout, mirroring the shipped wallet stack. A specimen test
+  with one fixed backend throughout, since a wallet's proving implementation is outside
+  the service's knowledge and does not co-vary with the configured verifier. A specimen test
   observes both backends verifying the upstream example proof — isrg-rust under the
   assumed empty map — over the vendored v6 circuit and verify inputs
   (`tests/data/README.md` records provenance).

@@ -141,9 +141,10 @@ def load_credential(name: str = DEFAULT_CREDENTIAL) -> Credential:
 def _held_circuit() -> HeldCircuit:
     """Resolve the pinned circuit through the same loader as the verifier.
 
-    The prover backend is fixed to google-cpp: the shipped wallet stack this
-    presenter stands in for is google's, whichever backend the verifier under
-    test is configured with.
+    The prover backend is fixed while the verifier under test varies: a
+    wallet's proving implementation is outside the service's knowledge and
+    control, so the suite does not co-vary it with the configured verifier.
+    The fixed choice is arbitrary.
     """
     return load_held_circuit("google-cpp")
 
