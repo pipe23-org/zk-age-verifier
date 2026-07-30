@@ -74,7 +74,7 @@ def specimen() -> Specimen:
     )
 
 
-def test_google_cpp_verifies_its_own_proof(specimen: Specimen) -> None:
+def test_google_cpp_verifies(specimen: Specimen) -> None:
     client = Pylongfellow(backend="google-cpp")
     handle = client.load_circuit(specimen.spec, specimen.circuit)
     client.verify(
@@ -88,7 +88,7 @@ def test_google_cpp_verifies_its_own_proof(specimen: Specimen) -> None:
     )
 
 
-def test_isrg_rust_verifies_under_assumed_device_namespaces(specimen: Specimen) -> None:
+def test_isrg_rust_verifies_given_empty_device_namespaces(specimen: Specimen) -> None:
     client = Pylongfellow(backend="isrg-rust")
     handle = client.load_circuit(specimen.spec, specimen.circuit)
     client.verify(
