@@ -143,7 +143,7 @@ def _held_circuit() -> HeldCircuit:
 
     The prover stays fixed while the verifier under test varies.
     """
-    return load_held_circuit("google-cpp")
+    return load_held_circuit(backend="google-cpp")
 
 
 def _sign_device_transcript(cred: Credential, transcript: bytes) -> bytes:

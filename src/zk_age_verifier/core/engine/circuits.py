@@ -53,7 +53,7 @@ class HeldCircuit:
     zk_system_id: str
 
 
-def load_held_circuit(backend: str) -> HeldCircuit:
+def load_held_circuit(*, backend: str) -> HeldCircuit:
     """Load the vendored circuit artifact, verify its integrity, and bind a client.
 
     The circuit blob and its sidecar ship as package data. The blob is checked
