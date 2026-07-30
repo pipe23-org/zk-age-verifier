@@ -25,6 +25,12 @@ log = structlog.get_logger(__name__)
 # CBOR true, the disclosed value every age check requires.
 _CLAIM_TRUE = b"\xf5"
 
+# CBOR empty map: the DeviceNameSpaces value this service assumes when the wire
+# carries none. Deployed provers fix the same value on their side. See
+# https://github.com/pipe23-org/pylongfellow/issues/29 for the record of the
+# format gap and the backends' disagreement over this input.
+_ASSUMED_DEVICE_NAMESPACES = b"\xa0"
+
 
 class MalformedPresentation(Exception):
     """Raised when the DeviceResponse or its ZkDocument is malformed."""
@@ -63,6 +69,11 @@ class ZkDocument:
         issuer_signed: The disclosed claims, namespace to element listing.
         device_signed: Expected empty; a claim listing if a wallet populates it.
         mso_x5chain: The issuer DS certificate.
+        device_name_spaces_bytes: Inner bytes of the tag-24 DeviceNameSpacesBytes
+            the proof is bound to. The ZK response format defines no field that
+            carries this value, so it is ``None`` on every presentation the
+            format can express; the field models the verifier's input set, not
+            the serialization.
     """
 
     proof: bytes
@@ -72,6 +83,7 @@ class ZkDocument:
     issuer_signed: dict[str, object]
     device_signed: object
     mso_x5chain: x509.Certificate
+    device_name_spaces_bytes: bytes | None
 
 
 @dataclass(frozen=True)
@@ -135,6 +147,16 @@ async def verify_presentation(
 
     issuer_pk = anchors.resolve(document.mso_x5chain)
 
+    # The stated-assumption injection point. The wire cannot carry
+    # DeviceNameSpacesBytes, so when the parsed document holds none the service
+    # substitutes the empty map here — an assumption about what deployed
+    # devices signed, stated in this repository rather than defaulted inside
+    # pylongfellow. google-cpp ignores the parameter; isrg-rust requires and
+    # binds it (https://github.com/pipe23-org/pylongfellow/issues/29).
+    device_namespaces = document.device_name_spaces_bytes
+    if device_namespaces is None:
+        device_namespaces = _ASSUMED_DEVICE_NAMESPACES
+
     attrs = [mdoc.RequestedAttribute(DOC_TYPE, claim, _CLAIM_TRUE) for claim in claims]
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(
@@ -148,6 +170,7 @@ async def verify_presentation(
             document.timestamp,
             document.proof,
             DOC_TYPE,
+            device_namespaces=device_namespaces,
         ),
     )
 
@@ -226,6 +249,9 @@ def _parse_zk_document(zk_doc: object) -> ZkDocument:
         issuer_signed=issuer_signed,
         device_signed=device_signed,
         mso_x5chain=mso_x5chain,
+        # The response format defines no field to read this from; every
+        # expressible presentation parses to explicit absence.
+        device_name_spaces_bytes=None,
     )
 
 

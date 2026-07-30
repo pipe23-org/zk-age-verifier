@@ -19,4 +19,5 @@ plugins:
 
 nav:
   - Home: index.md
+  - Backends: backends.md
   - HTTP API: api.md

@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from tests.conftest import ORIGIN, render_config
 from zk_age_verifier.config import Config, load_config
 from zk_age_verifier.core.constants import DOC_TYPE
 from zk_age_verifier.core.encoding import b64url_encode
+from zk_age_verifier.core.engine import mdoc_zk
 from zk_age_verifier.core.engine.circuits import HeldCircuit
 from zk_age_verifier.core.transport.dc import (
     DcSessionState,
@@ -120,6 +122,47 @@ async def test_verified_happy_path(
     assert isinstance(verdict, VerdictVerified)
     assert verdict.result == {"age_over_18": True}
     assert verdict.verified_at.endswith("Z")
+
+
+async def test_absent_device_namespaces_verify_under_assumption(
+    session: Session, held: HeldCircuit, config: Config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cert, chain = _anchor_cert()
+    recorded: dict[str, object] = {}
+
+    def _record(*_args: object, **kwargs: object) -> None:
+        recorded.update(kwargs)
+
+    monkeypatch.setattr(held.client, "verify", _record)
+    body = _body(session, _device_response(held, chain))
+    verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
+    assert isinstance(verdict, VerdictVerified)
+    assert recorded["device_namespaces"] == b"\xa0"
+
+
+async def test_wire_device_namespaces_reach_the_client_unchanged(
+    session: Session, held: HeldCircuit, config: Config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No expressible presentation parses to a non-None value today; the parser
+    # is bypassed to pin that the assumption substitutes only for absence.
+    wire_value = b"\xa1\x61a\xf5"
+    cert, chain = _anchor_cert()
+    recorded: dict[str, object] = {}
+
+    def _record(*_args: object, **kwargs: object) -> None:
+        recorded.update(kwargs)
+
+    monkeypatch.setattr(held.client, "verify", _record)
+    real_parse = mdoc_zk.parse_device_response
+    monkeypatch.setattr(
+        mdoc_zk,
+        "parse_device_response",
+        lambda plaintext: replace(real_parse(plaintext), device_name_spaces_bytes=wire_value),
+    )
+    body = _body(session, _device_response(held, chain))
+    verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
+    assert isinstance(verdict, VerdictVerified)
+    assert recorded["device_namespaces"] == wire_value
 
 
 async def test_invalid_envelope(session: Session, held: HeldCircuit, config: Config) -> None:

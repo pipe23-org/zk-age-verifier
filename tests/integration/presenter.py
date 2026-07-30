@@ -139,8 +139,13 @@ def load_credential(name: str = DEFAULT_CREDENTIAL) -> Credential:
 
 @functools.cache
 def _held_circuit() -> HeldCircuit:
-    """Resolve the pinned circuit through the same loader as the verifier."""
-    return load_held_circuit()
+    """Resolve the pinned circuit through the same loader as the verifier.
+
+    The prover backend is fixed to google-cpp: the shipped wallet stack this
+    presenter stands in for is google's, whichever backend the verifier under
+    test is configured with.
+    """
+    return load_held_circuit("google-cpp")
 
 
 def _sign_device_transcript(cred: Credential, transcript: bytes) -> bytes:

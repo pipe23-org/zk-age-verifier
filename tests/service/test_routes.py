@@ -23,7 +23,7 @@ def _config_text(*, cap: int = 1000, cors: list[str] | None = None) -> str:
 
 @pytest.fixture
 def make_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> MakeApp:
-    monkeypatch.setattr("zk_age_verifier.app.load_held_circuit", lambda: HELD_STUB)
+    monkeypatch.setattr("zk_age_verifier.app.load_held_circuit", lambda backend: HELD_STUB)
 
     def _make(*, cap: int = 1000, cors: list[str] | None = None) -> FastAPI:
         path = tmp_path / "config.toml"
