@@ -16,10 +16,14 @@
   google-cpp ignores the parameter; isrg-rust requires and binds it.
 - In-process integration tests run against both verifier backends; the presenter proves
   with one fixed backend throughout, since a wallet's proving implementation is outside
-  the service's knowledge and does not co-vary with the configured verifier. A specimen test
-  observes both backends verifying the upstream example proof — isrg-rust under the
-  assumed empty map — over the vendored v6 circuit and verify inputs
-  (`tests/data/README.md` records provenance).
+  the service's knowledge and does not co-vary with the configured verifier.
+- A new test verifies the proof carried by the vendored upstream example request with
+  both backends. The service's parser rejects that request's wire shape, so the test
+  calls the pylongfellow client directly; google-cpp verifies the proof, and isrg-rust
+  verifies the same proof when given the assumed empty device-namespace map. The inputs
+  the request does not carry — the v6 circuit and the recorded issuer key, timestamp,
+  and attributes — are copied from pylongfellow's differential corpus, with provenance
+  in `tests/data/README.md`.
 - Ported to the pylongfellow 0.3 client API: one `Pylongfellow(backend="google-cpp")`
   binds the backend at startup, `load_circuit` returns a handle, and `prove`/`verify`
   are methods on the client. The module-level `mdoc.prove`/`mdoc.verify` calls and the
