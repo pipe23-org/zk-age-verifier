@@ -96,6 +96,9 @@ Full documentation: https://zk-age-verifier.readthedocs.io/
 ```
 uv sync
 uv run pytest
+uv run ruff check
+uv run ruff format --check
+uv run mypy
 ```
 
 `make test-live` runs the suite against a running server over HTTP. `make test-container`
