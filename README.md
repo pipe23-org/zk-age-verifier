@@ -8,7 +8,7 @@ reachable only from the consumer backend, not the browser or internet. It is exp
 and unstable.
 
 [![CI](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml)
-[![Docs](https://app.readthedocs.org/projects/zk-age-verifier/badge/?version=latest)](https://zk-age-verifier.readthedocs.io/en/latest/)
+[![Docs](https://app.readthedocs.org/projects/zk-age-verifier/badge/?version=stable)](https://zk-age-verifier.readthedocs.io/en/stable/)
 [![PyPI](https://img.shields.io/pypi/v/zk-age-verifier)](https://pypi.org/project/zk-age-verifier/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -105,7 +105,6 @@ runs it against the built container image.
 
 You should not rely on this code.
 
-- End-to-end testing covers Chrome on one Android 16 device.
 - No rate limiting.
 - The session store is in-process.
 - The proof is verified against an empty device-namespace map; the ZK response format carries
