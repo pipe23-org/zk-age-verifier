@@ -103,9 +103,8 @@ async def verify_presentation(
 ) -> EngineResult:
     """Verify a decrypted presentation and return the established claims.
 
-    The proof check runs in a thread-pool executor because it is a sub-second C
-    call that must not block the event loop; every step before it stays on the
-    loop.
+    The backend's verify call is synchronous, so the proof check runs in a
+    thread-pool executor. Every step before it stays on the event loop.
 
     Args:
         presentation: The HPKE-opened DeviceResponse CBOR.

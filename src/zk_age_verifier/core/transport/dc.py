@@ -1,10 +1,10 @@
 """The Digital Credentials transport: request framing, HPKE envelope, and handover.
 
-This transport owns everything between the consumer's page and the wallet: the
-``navigator.credentials.get`` offer, the ``EncryptionInfo`` and ``DeviceRequest``
-it carries, the ``SessionTranscript`` handover, the HPKE seal/open of the
-response, and the parse of the ``dcapi`` response wrapper. It never reads
-decrypted presentation bytes; the engine does. It does not import the engine.
+This transport builds the ``navigator.credentials.get`` offer and the
+``EncryptionInfo`` and ``DeviceRequest`` it carries, builds the
+``SessionTranscript`` handover, seals and opens the HPKE response, and parses
+the ``dcapi`` response wrapper. It never reads decrypted presentation bytes and
+does not import the engine.
 """
 
 import hashlib
@@ -44,7 +44,7 @@ def build_encryption_info(nonce: bytes, recipient_key: ec.EllipticCurvePublicKey
     """Build the CBOR ``EncryptionInfo`` addressing the response to a session key.
 
     Args:
-        nonce: Per-session random bytes (16 on the deployed backend).
+        nonce: Per-session random bytes; the transport generates 16.
         recipient_key: The session's ephemeral P-256 public key.
 
     Returns:

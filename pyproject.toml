@@ -38,7 +38,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/pipe23-org/zk-age-verifier"
-Documentation = "https://zk-age-verifier.readthedocs.io/"
+Documentation = "https://zk-age-verifier.readthedocs.io/en/stable/"
 Repository = "https://github.com/pipe23-org/zk-age-verifier"
 Issues = "https://github.com/pipe23-org/zk-age-verifier/issues"
 
