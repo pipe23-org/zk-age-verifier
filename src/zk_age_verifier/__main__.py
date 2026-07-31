@@ -17,7 +17,7 @@ APP_TARGET = "zk_age_verifier.app:app_factory"
 def _serve(host: str, port: int) -> None:
     """Boot the ASGI app under granian in factory mode.
 
-    Kept as a seam so tests can drive ``main`` without starting a server.
+    Kept separate from ``main`` so tests can call ``main`` without starting a server.
     """
     Granian(APP_TARGET, address=host, port=port, interface=Interfaces.ASGI, factory=True).serve()
 

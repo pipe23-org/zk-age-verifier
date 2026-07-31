@@ -1,4 +1,4 @@
-"""The consumer-facing HTTP surface: open a session, relay a presentation, debug a transcript.
+"""The HTTP routes: open a session, relay a presentation, debug a transcript.
 
 Three routes over ``SessionStore`` and the verify pipeline. ``POST /sessions`` creates a
 session and returns the closed, schema-pinned DC transport offer under ``transports.dc``.
@@ -89,7 +89,7 @@ class DcRequest(BaseModel):
 
 
 class Transports(BaseModel):
-    """The per-transport offers for a session; ``dc`` is the only one in v0.1."""
+    """The per-transport offers for a session; ``dc`` is the only transport offered."""
 
     model_config = ConfigDict(extra="forbid")
 

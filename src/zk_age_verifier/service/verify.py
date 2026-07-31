@@ -1,11 +1,11 @@
 """The response-verification pipeline: decrypt, parse, and check a ZK proof.
 
-Composes the two seams: the DC transport opens the crypto envelope and
-reconstructs the transcript, then the mdoc ZK engine parses and verifies the
-presentation. Every failure from either seam maps to one terminal machine
-reason. The result is a ``VerdictVerified`` listing the checked claims or a
-``VerdictFailed`` naming the reason. Each outcome logs one event with the public
-id, timing, and reason; never proof contents, key material, or issuer identity.
+The DC transport opens the crypto envelope and reconstructs the transcript, then
+the mdoc ZK engine parses and verifies the presentation. Every failure from
+either step maps to one terminal machine reason. The result is a
+``VerdictVerified`` listing the checked claims or a ``VerdictFailed`` naming the
+reason. Each outcome logs one event with the public id, timing, and reason;
+never proof contents, key material, or issuer identity.
 """
 
 import time
