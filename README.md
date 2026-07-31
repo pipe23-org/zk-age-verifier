@@ -2,9 +2,10 @@
 
 zk-age-verifier is a verifier service for EU age verification, accepting Longfellow
 zero-knowledge proofs over mdoc through the W3C Digital Credentials API. It
-runs as a sidecar HTTP service beside a consumer backend. A verdict contains one boolean
-per requested check. The service has no authentication and is intended to be reachable only
-from the consumer backend, not the browser or internet. It is experimental and unstable.
+runs as a sidecar HTTP service beside a consumer backend. A verified verdict contains one
+boolean per requested check. The service has no authentication and is intended to be
+reachable only from the consumer backend, not the browser or internet. It is experimental
+and unstable.
 
 [![CI](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml/badge.svg)](https://github.com/pipe23-org/zk-age-verifier/actions/workflows/ci.yml)
 [![Docs](https://app.readthedocs.org/projects/zk-age-verifier/badge/?version=latest)](https://zk-age-verifier.readthedocs.io/en/latest/)
@@ -74,9 +75,9 @@ Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
 - `backend` (default `google-cpp`) — the pylongfellow verifier backend, `google-cpp` or `isrg-rust`; an unknown or unbuilt name fails startup.
 - `session_ttl_seconds` (default 300) — session lifetime.
 - `session_cap` (default 1000) — live-session limit; `POST /sessions` returns 503 at the cap.
-- `timestamp_skew_seconds` (default 300) — proofs with a timestamp older than this fail `stale-proof`.
+- `timestamp_skew_seconds` (default 300) — proofs whose timestamp differs from the current time by more than this fail `stale-proof`.
 - `cors_allowed_origins` (default `[]`) — origins for which CORS headers are emitted.
-- `trust.sources` (required) — non-empty list; each entry sets one of `pem` (a PEM file or directory of issuer CA certs) or `etsi_xml` (an ETSI trusted-list URL).
+- `trust.sources` (required) — non-empty list; each entry sets one of `pem` (a PEM file or directory of issuer CA certs) or `etsi_xml` (an ETSI trusted-list https URL or file path).
 
 A presented document-signer certificate must carry the keyUsage extension asserting digitalSignature; an anchor accepted as the issuer of a chained leaf must assert keyCertSign.
 
@@ -107,6 +108,8 @@ You should not rely on this code.
 - End-to-end testing covers Chrome on one Android 16 device.
 - No rate limiting.
 - The session store is in-process.
+- The proof is verified against an empty device-namespace map; the ZK response format carries
+  no field holding the map the wallet signed.
 
 ## License
 
