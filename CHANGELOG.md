@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+Dependency and documentation release. The service code is unchanged from 0.2.0; the release
+carries the corrected README to the PyPI project page.
+
+- The container image now installs fastapi 0.140.13, up from 0.139.2. The `fastapi`
+  requirement is unconstrained, so this bump moves the locked build only
+  ([#27](https://github.com/pipe23-org/zk-age-verifier/pull/27)).
+- The `Documentation` project URL now points at
+  `https://zk-age-verifier.readthedocs.io/en/stable/`, replacing the Read the Docs root, which
+  serves the `latest` build of `main`
+  ([#29](https://github.com/pipe23-org/zk-age-verifier/pull/29)).
+
 ## 0.2.0 - 2026-07-30
 
 - pylongfellow 0.4.0: both verifier backends ship in the default install.
