@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-08-03
 
 Dependency and documentation release. The release carries the corrected README to the
 PyPI project page.
