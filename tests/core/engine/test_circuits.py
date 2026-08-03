@@ -53,8 +53,7 @@ def test_load_held_circuit_reads_vendored_artifact() -> None:
     assert held.spec.version == CIRCUIT_VERSION
     assert held.spec.num_attributes == NUM_ATTRIBUTES
     assert held.zk_system_id == HELD_ZK_SYSTEM_ID
-    assert held.handle.backend.name == "google-cpp"
-    assert held.handle.spec == held.spec
+    assert held.longfellow.backend.name == "google-cpp"
 
 
 def test_load_held_circuit_integrity_failure_raises(

@@ -22,6 +22,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding, load_pem_private_key
 from pylongfellow import mdoc
+from pylongfellow.mdoc import testing
 
 from zk_age_verifier.core.encoding import b64url_decode, b64url_encode
 from zk_age_verifier.core.engine.circuits import HeldCircuit, load_held_circuit
@@ -84,7 +85,7 @@ class Credential:
         name: The entry's directory name.
         doc_type: The credential's doctype.
         mdoc_bytes: The raw mdoc, byte-exact from its source.
-        issuer_pk: The issuer's P-256 public key as ``(x, y)``.
+        issuer_public_key: The issuer's P-256 public key.
         certificate_der: The certificate presented as ``msoX5chain[0]``.
         claims: Namespace to element id to CBOR value bytes, as the credential
             holds them.
@@ -96,7 +97,7 @@ class Credential:
     name: str
     doc_type: str
     mdoc_bytes: bytes
-    issuer_pk: tuple[int, int]
+    issuer_public_key: mdoc.PublicKey
     certificate_der: bytes
     claims: dict[str, dict[str, bytes]]
     device_key: ec.EllipticCurvePrivateKey | None
@@ -127,7 +128,9 @@ def load_credential(name: str = DEFAULT_CREDENTIAL) -> Credential:
         name=name,
         doc_type=manifest["credential"]["doctype"],
         mdoc_bytes=(entry / "credential.cbor").read_bytes(),
-        issuer_pk=(int(manifest["issuer"]["pk_x"], 16), int(manifest["issuer"]["pk_y"], 16)),
+        issuer_public_key=mdoc.PublicKey(
+            int(manifest["issuer"]["pk_x"], 16), int(manifest["issuer"]["pk_y"], 16)
+        ),
         certificate_der=certificate.public_bytes(Encoding.DER),
         claims={
             space: {element: bytes.fromhex(value) for element, value in elements.items()}
@@ -152,9 +155,9 @@ def _sign_device_transcript(cred: Credential, transcript: bytes) -> bytes:
     The prover validates the device signature against the transcript it proves
     over, so each presentation replaces the committed signature with one over
     this session's transcript, signed through
-    ``pylongfellow.mdoc.sign_device_authentication`` — the same primitive
-    ``scripts/generate_credentials.py`` validates against the vendored
-    credential's own signature.
+    ``pylongfellow.mdoc.testing.sign_device_authentication`` — the same
+    primitive ``scripts/generate_credentials.py`` validates against the
+    vendored credential's own signature.
 
     Args:
         cred: The credential; must hold its device key.
@@ -166,7 +169,7 @@ def _sign_device_transcript(cred: Credential, transcript: bytes) -> bytes:
     assert cred.device_key is not None
     response = cbor2.loads(cred.mdoc_bytes)
     document = response["documents"][0]
-    signature = mdoc.sign_device_authentication(
+    signature = testing.sign_device_authentication(
         cred.device_key, transcript, document["docType"], document["deviceSigned"]["nameSpaces"]
     )
     document["deviceSigned"]["deviceAuth"]["deviceSignature"] = [
@@ -251,14 +254,14 @@ def present(
         raise PresentationRefused("consent denied")
 
     cred = load_credential(credential)
-    attrs: list[mdoc.RequestedAttribute] = []
+    proved: list[mdoc.RequestedAttribute] = []
     disclosed: dict[str, list[dict[str, object]]] = {}
     for element in requested:
         space = next((s for s, elements in cred.claims.items() if element in elements), None)
         if space is None:
             raise PresentationRefused(f"credential {cred.name} does not hold {element}")
         value = cred.claims[space][element]
-        attrs.append(mdoc.RequestedAttribute(space, element, value))
+        proved.append(mdoc.RequestedAttribute(space, element, value))
         disclosed.setdefault(space, []).append(
             {"elementIdentifier": element, "elementValue": cbor2.loads(value)}
         )
@@ -274,7 +277,7 @@ def present(
     timestamp = datetime.now(UTC).replace(microsecond=0)
     if knobs.timestamp_offset is not None:
         timestamp += knobs.timestamp_offset
-    proof = held.client.prove(held.handle, mdoc_bytes, cred.issuer_pk, transcript, attrs, timestamp)
+    proof = held.longfellow.prove(mdoc_bytes, cred.issuer_public_key, transcript, proved, timestamp)
     if knobs.corrupt_proof:
         proof = proof[:-1] + bytes([proof[-1] ^ 0xFF])
 

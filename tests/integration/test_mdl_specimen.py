@@ -1,8 +1,8 @@
 """The vendored upstream example proof verified by each backend.
 
 The example request carries a complete proof but a wire shape the service's
-parser rejects (``test_upstream_response.py``), so these tests call the
-pylongfellow client directly. The isrg-rust case supplies the assumed empty
+parser rejects (``test_upstream_response.py``), so these tests call
+pylongfellow directly. The isrg-rust case supplies the assumed empty
 device-namespace map (https://github.com/pipe23-org/pylongfellow/issues/29).
 """
 
@@ -17,7 +17,7 @@ import pytest
 from pylongfellow import Pylongfellow, mdoc
 from pylongfellow.mdoc import CircuitSpec
 
-# Calls the client directly, never the socket: skipped under --transport=live.
+# Calls pylongfellow directly, never the socket: skipped under --transport=live.
 pytestmark = pytest.mark.inprocess_only
 
 DATA = Path(__file__).parent.parent / "data"
@@ -33,9 +33,9 @@ class Specimen:
     circuit: bytes
     proof: bytes
     transcript: bytes
-    issuer_pk: tuple[int, int]
+    issuer_public_key: mdoc.PublicKey
     timestamp: datetime
-    attrs: list[mdoc.RequestedAttribute]
+    claims: list[mdoc.RequestedAttribute]
 
 
 @pytest.fixture(scope="module")
@@ -65,9 +65,11 @@ def specimen() -> Specimen:
         circuit=(DATA / "v6-1attr.circuit").read_bytes(),
         proof=proof,
         transcript=transcript,
-        issuer_pk=(int(record["issuer_pk_x"], 16), int(record["issuer_pk_y"], 16)),
+        issuer_public_key=mdoc.PublicKey(
+            int(record["issuer_pk_x"], 16), int(record["issuer_pk_y"], 16)
+        ),
         timestamp=datetime.fromisoformat(record["timestamp"]),
-        attrs=[
+        claims=[
             mdoc.RequestedAttribute(a["namespace"], a["id"], bytes.fromhex(a["cbor_value_hex"]))
             for a in record["attrs"]
         ],
@@ -75,13 +77,12 @@ def specimen() -> Specimen:
 
 
 def test_google_cpp_verifies(specimen: Specimen) -> None:
-    client = Pylongfellow(backend="google-cpp")
-    handle = client.load_circuit(specimen.spec, specimen.circuit)
-    client.verify(
-        handle,
-        specimen.issuer_pk,
+    verifier = Pylongfellow(backend="google-cpp")
+    verifier.load_circuit(specimen.spec, specimen.circuit)
+    verifier.verify(
+        specimen.issuer_public_key,
         specimen.transcript,
-        specimen.attrs,
+        specimen.claims,
         specimen.timestamp,
         specimen.proof,
         DOC_TYPE,
@@ -89,13 +90,12 @@ def test_google_cpp_verifies(specimen: Specimen) -> None:
 
 
 def test_isrg_rust_verifies_given_empty_device_namespaces(specimen: Specimen) -> None:
-    client = Pylongfellow(backend="isrg-rust")
-    handle = client.load_circuit(specimen.spec, specimen.circuit)
-    client.verify(
-        handle,
-        specimen.issuer_pk,
+    verifier = Pylongfellow(backend="isrg-rust")
+    verifier.load_circuit(specimen.spec, specimen.circuit)
+    verifier.verify(
+        specimen.issuer_public_key,
         specimen.transcript,
-        specimen.attrs,
+        specimen.claims,
         specimen.timestamp,
         specimen.proof,
         DOC_TYPE,

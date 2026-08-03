@@ -25,15 +25,15 @@ def test_vendored_bytes_prove_and_verify() -> None:
     cred = load_credential("eu-av-vendored")
     transcript = (CREDENTIALS_DIR / cred.name / "transcript.bin").read_bytes()
     held = load_held_circuit(backend="google-cpp")
-    attrs = [
+    requested = [
         mdoc.RequestedAttribute(NAMESPACE, "age_over_18", cred.claims[NAMESPACE]["age_over_18"])
     ]
     timestamp = datetime.now(UTC).replace(microsecond=0)
 
-    proof = held.client.prove(
-        held.handle, cred.mdoc_bytes, cred.issuer_pk, transcript, attrs, timestamp
+    proof = held.longfellow.prove(
+        cred.mdoc_bytes, cred.issuer_public_key, transcript, requested, timestamp
     )
 
-    held.client.verify(
-        held.handle, cred.issuer_pk, transcript, attrs, timestamp, proof, cred.doc_type
+    held.longfellow.verify(
+        cred.issuer_public_key, transcript, requested, timestamp, proof, cred.doc_type
     )

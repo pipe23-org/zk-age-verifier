@@ -1,7 +1,7 @@
 """Generate the constructed test credentials and their certificate family.
 
 Rebuilds the vendored EU AV credential's claims under locally held keys through
-``pylongfellow.mdoc.create_credential``, constructing three entries: ``eu-av``
+``pylongfellow.mdoc.testing.create_presentation``, constructing three entries: ``eu-av``
 (the honest default), ``mdl`` (a mobile driving licence with the same claims
 under doctype ``org.iso.18013.5.1.mDL``, used to drive ``claim-mismatch``), and
 ``eu-av-untrusted`` (``eu-av``'s claims with its leaf signed by a second CA
@@ -34,6 +34,7 @@ import cbor2
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from pylongfellow import mdoc
+from pylongfellow.mdoc import testing
 
 from zk_age_verifier.core.engine.circuits import load_held_circuit
 
@@ -117,19 +118,17 @@ def _accept(credential: bytes, issuer_key: ec.EllipticCurvePrivateKey, transcrip
     """Prove and verify over the constructed credential, the acceptance check."""
     held = load_held_circuit()
     numbers = issuer_key.public_key().public_numbers()
+    issuer_public_key = mdoc.PublicKey(numbers.x, numbers.y)
     document = cbor2.loads(credential)["documents"][0]
     doc_type = document["docType"]
     namespace = _age_namespace(document)
-    attrs = [mdoc.RequestedAttribute(namespace, "age_over_18", b"\xf5")]
+    claims = [mdoc.RequestedAttribute(namespace, "age_over_18", b"\xf5")]
     timestamp = datetime.now(UTC).replace(microsecond=0)
-    proof = held.client.prove(
-        held.handle, credential, (numbers.x, numbers.y), transcript, attrs, timestamp
-    )
-    held.client.verify(
-        held.handle,
-        (numbers.x, numbers.y),
+    proof = held.longfellow.prove(credential, issuer_public_key, transcript, claims, timestamp)
+    held.longfellow.verify(
+        issuer_public_key,
         transcript,
-        attrs,
+        claims,
         timestamp,
         proof,
         doc_type,
@@ -148,7 +147,7 @@ def _build_entry(
 ) -> None:
     """Construct one credential entry: fresh keys, a leaf under ``ca_key``, and its files."""
     issuer_key = ec.generate_private_key(ec.SECP256R1())
-    leaf = mdoc.create_certificate(
+    leaf = testing.create_certificate(
         f"zk-age-verifier {name} issuer",
         issuer_key.public_key(),
         ca_cn,
@@ -156,7 +155,7 @@ def _build_entry(
         VALID_FROM,
         VALID_UNTIL,
     )
-    created = mdoc.create_credential(
+    created = testing.create_presentation(
         doc_type,
         claims,
         acceptance_transcript,
@@ -190,12 +189,12 @@ def main() -> None:
     template = cbor2.loads(template_bytes)
     template_manifest = tomllib.loads((template_dir / "manifest.toml").read_text())
     captured_transcript = (template_dir / template_manifest["device"]["transcript"]).read_bytes()
-    mdoc.verify_device_authentication(template_bytes, captured_transcript)
+    testing.verify_device_authentication(template_bytes, captured_transcript)
     print("DeviceAuthentication encoding validated against the template's device signature")
 
     ca_key = ec.generate_private_key(ec.SECP256R1())
     ca_cn = "zk-age-verifier test CA"
-    ca_cert = mdoc.create_certificate(
+    ca_cert = testing.create_certificate(
         ca_cn, ca_key.public_key(), ca_cn, ca_key, VALID_FROM, VALID_UNTIL, ca=True
     )
 
@@ -228,7 +227,7 @@ def main() -> None:
         int(template_manifest["issuer"]["pk_y"], 16),
         ec.SECP256R1(),
     ).public_key()
-    vendored_leaf = mdoc.create_certificate(
+    vendored_leaf = testing.create_certificate(
         "zk-age-verifier vendored issuer",
         vendored_issuer_pub,
         ca_cn,
