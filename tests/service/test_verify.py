@@ -116,7 +116,7 @@ async def test_verified_happy_path(
     session: Session, held: HeldCircuit, config: Config, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     cert, chain = _anchor_cert()
-    monkeypatch.setattr(held.client, "verify", lambda *_a, **_k: None)
+    monkeypatch.setattr(held.longfellow, "verify", lambda *_a, **_k: None)
     body = _body(session, _device_response(held, chain))
     verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
     assert isinstance(verdict, VerdictVerified)
@@ -133,14 +133,14 @@ async def test_absent_device_namespaces_verify_under_assumption(
     def _record(*_args: object, **kwargs: object) -> None:
         recorded.update(kwargs)
 
-    monkeypatch.setattr(held.client, "verify", _record)
+    monkeypatch.setattr(held.longfellow, "verify", _record)
     body = _body(session, _device_response(held, chain))
     verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
     assert isinstance(verdict, VerdictVerified)
     assert recorded["device_namespaces"] == b"\xa0"
 
 
-async def test_wire_device_namespaces_reach_the_client_unchanged(
+async def test_wire_device_namespaces_reach_verify_unchanged(
     session: Session, held: HeldCircuit, config: Config, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # No expressible presentation parses to a non-None value today; the parser
@@ -152,7 +152,7 @@ async def test_wire_device_namespaces_reach_the_client_unchanged(
     def _record(*_args: object, **kwargs: object) -> None:
         recorded.update(kwargs)
 
-    monkeypatch.setattr(held.client, "verify", _record)
+    monkeypatch.setattr(held.longfellow, "verify", _record)
     real_parse = mdoc_zk.parse_device_response
     monkeypatch.setattr(
         mdoc_zk,
@@ -245,7 +245,7 @@ async def test_proof_invalid(
     def _raise(*_a: object, **_k: object) -> None:
         raise mdoc.VerifierError(mdoc.VerifierErrorCode.MDOC_VERIFIER_GENERAL_FAILURE)
 
-    monkeypatch.setattr(held.client, "verify", _raise)
+    monkeypatch.setattr(held.longfellow, "verify", _raise)
     body = _body(session, _device_response(held, chain))
     verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
     assert verdict == VerdictFailed(state="failed", reason="proof-invalid")
@@ -277,7 +277,7 @@ async def test_engine_error(
     def _boom(*_a: object, **_k: object) -> None:
         raise RuntimeError("unexpected")
 
-    monkeypatch.setattr(held.client, "verify", _boom)
+    monkeypatch.setattr(held.longfellow, "verify", _boom)
     body = _body(session, _device_response(held, chain))
     verdict = await verify_response(session, held, AnchorSet((cert,)), body, config)
     assert verdict == VerdictFailed(state="failed", reason="engine-error")

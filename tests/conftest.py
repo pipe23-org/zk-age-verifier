@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 from pylongfellow import Pylongfellow
-from pylongfellow.backends import CircuitHandle
 from pylongfellow.mdoc import CircuitSpec
 
 from zk_age_verifier.core.engine.circuits import HeldCircuit, load_held_circuit
@@ -28,8 +27,8 @@ TEST_ANCHOR_PEM = Path(__file__).parent / "integration" / "credentials" / "test-
 ORIGIN = "https://chat.example.org"
 
 # A stand-in HeldCircuit for tests that stub circuit loading: a fixed spec and a
-# synthetic handle over a real client, so no artifact is read. Its zk_system_id is
-# the identity the spec fields imply, not one resolved from the vendored artifact.
+# real Pylongfellow with no circuit loaded, so no artifact is read. Its zk_system_id
+# is the identity the spec fields imply, not one resolved from the vendored artifact.
 _STUB_SPEC = CircuitSpec(
     system="longfellow-libzk-v1",
     circuit_hash="abc123",
@@ -38,11 +37,9 @@ _STUB_SPEC = CircuitSpec(
     block_enc_hash=1,
     block_enc_sig=1,
 )
-_STUB_CLIENT = Pylongfellow(backend="google-cpp")
 HELD_STUB = HeldCircuit(
     spec=_STUB_SPEC,
-    client=_STUB_CLIENT,
-    handle=CircuitHandle(spec=_STUB_SPEC, backend=_STUB_CLIENT.backend, state=None),
+    longfellow=Pylongfellow(backend="google-cpp"),
     zk_system_id="longfellow-libzk-v1_7_1_1_1_abc123",
 )
 

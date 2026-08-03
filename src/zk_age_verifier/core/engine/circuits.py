@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from importlib.resources import files
 
 from pylongfellow import Pylongfellow
-from pylongfellow.backends import CircuitHandle
 from pylongfellow.mdoc import CircuitSpec
 
 # The pinned circuit: the AV profile's proof system, circuit version, and
@@ -38,23 +37,22 @@ def zk_system_id(spec: CircuitSpec) -> str:
 
 @dataclass(frozen=True)
 class HeldCircuit:
-    """A resolved circuit, its identity, and the client that verifies against it.
+    """A resolved circuit, its identity, and the Pylongfellow instance holding it.
 
     Attributes:
         spec: The circuit's spec.
-        client: The backend client, bound once for the process.
-        handle: The loaded-circuit handle, carrying the backend's parsed state.
+        longfellow: The Pylongfellow instance, bound once for the process, with
+            the circuit loaded.
         zk_system_id: The in-band identity string for this circuit.
     """
 
     spec: CircuitSpec
-    client: Pylongfellow
-    handle: CircuitHandle
+    longfellow: Pylongfellow
     zk_system_id: str
 
 
 def load_held_circuit(*, backend: str) -> HeldCircuit:
-    """Load the vendored circuit artifact, verify its integrity, and bind a client.
+    """Load the vendored circuit artifact, verify its integrity, and bind an instance.
 
     The circuit blob and its sidecar ship as package data. The blob is checked
     against the sidecar's ``byte_sha256`` and the spec it describes is checked
@@ -62,7 +60,7 @@ def load_held_circuit(*, backend: str) -> HeldCircuit:
     re-validates that the spec's ``circuit_hash`` matches the blob at load.
 
     Args:
-        backend: pylongfellow backend registry name. Constructing the client
+        backend: pylongfellow backend registry name. Constructing the instance
             rejects an unknown name and probes availability, so an unusable
             backend fails here, at startup.
 
@@ -76,7 +74,7 @@ def load_held_circuit(*, backend: str) -> HeldCircuit:
         RuntimeError: The blob does not match the sidecar digest, or the sidecar
             spec does not match the pin.
     """
-    client = Pylongfellow(backend=backend)
+    longfellow = Pylongfellow(backend=backend)
     artifacts = files("zk_age_verifier").joinpath("circuits")
     blob = artifacts.joinpath(f"{_ARTIFACT}.circuit").read_bytes()
     sidecar = json.loads(artifacts.joinpath(f"{_ARTIFACT}.json").read_text())
@@ -106,5 +104,5 @@ def load_held_circuit(*, backend: str) -> HeldCircuit:
             f"{NUM_ATTRIBUTES}attr"
         )
 
-    handle = client.load_circuit(spec, blob)
-    return HeldCircuit(spec=spec, client=client, handle=handle, zk_system_id=zk_system_id(spec))
+    longfellow.load_circuit(spec, blob)
+    return HeldCircuit(spec=spec, longfellow=longfellow, zk_system_id=zk_system_id(spec))

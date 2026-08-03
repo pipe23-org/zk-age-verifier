@@ -140,7 +140,7 @@ async def verify_presentation(
     if abs((now - document.timestamp).total_seconds()) > timestamp_skew_seconds:
         raise StaleProof("proof timestamp is outside the allowed skew")
 
-    issuer_pk = anchors.resolve(document.mso_x5chain)
+    issuer_public_key = mdoc.PublicKey(*anchors.resolve(document.mso_x5chain))
 
     # Where the wire carries no DeviceNameSpacesBytes, the service substitutes
     # the empty map — a stated assumption about deployed devices
@@ -149,16 +149,15 @@ async def verify_presentation(
     if device_namespaces is None:
         device_namespaces = _ASSUMED_DEVICE_NAMESPACES
 
-    attrs = [mdoc.RequestedAttribute(DOC_TYPE, claim, _CLAIM_TRUE) for claim in claims]
+    requested = [mdoc.RequestedAttribute(DOC_TYPE, claim, _CLAIM_TRUE) for claim in claims]
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(
         None,
         functools.partial(
-            held.client.verify,
-            held.handle,
-            issuer_pk,
+            held.longfellow.verify,
+            issuer_public_key,
             transcript,
-            attrs,
+            requested,
             document.timestamp,
             document.proof,
             DOC_TYPE,

@@ -2,9 +2,11 @@
 
 ## Unreleased
 
-Dependency and documentation release. The service code is unchanged from 0.2.0; the release
-carries the corrected README to the PyPI project page.
+Dependency and documentation release. The release carries the corrected README to the
+PyPI project page.
 
+- pylongfellow 0.5: the requirement is now `>=0.5.0,<0.6` and the service and test code
+  use the 0.5 API. The service's HTTP surface is unchanged.
 - The container image now installs fastapi 0.140.13, up from 0.139.2. The `fastapi`
   requirement is unconstrained, so this bump moves the locked build only
   ([#27](https://github.com/pipe23-org/zk-age-verifier/pull/27)).
