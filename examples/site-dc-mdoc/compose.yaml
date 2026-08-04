@@ -2,10 +2,14 @@ name: zk_age_verifier_demo
 
 services:
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.7
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      # The backend is on both networks; traefik only on edge. Without this the
+      # provider can pick the backend's internal-network address and every route
+      # times out.
+      - --providers.docker.network=zk_age_verifier_demo_edge
       - --providers.file.directory=/etc/traefik/dynamic
       - --entrypoints.websecure.address=:443
     ports:
