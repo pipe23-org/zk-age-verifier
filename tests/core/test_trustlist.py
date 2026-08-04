@@ -17,6 +17,9 @@ from zk_age_verifier.core.trustlist import AnchorSet, UntrustedIssuer, load_anch
 TEST_ANCHOR_PEM = Path(__file__).parents[1] / "integration" / "credentials" / "test-anchor.pem"
 VENDORED_ISSUER_X = 0xB4682EC20E06E8DF840B5DD32959798AB20C544D4DA50109FF4684D06FD261FC
 
+# A real certificate, not one this suite builds. See tests/data/README.md.
+AV_ISSUER_CA_PEM = Path(__file__).parents[1] / "data" / "av-issuer-ca-01.pem"
+
 NOW = datetime.now(UTC)
 
 
@@ -153,6 +156,17 @@ def test_non_p256_key_rejected() -> None:
     )
     with pytest.raises(UntrustedIssuer):
         AnchorSet((cert,)).resolve(cert)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Malformed value in a recognised extension raises ValueError from cryptography. "
+    "Blocks real-wallet e2e. Issue pending.",
+)
+def test_real_issuer_ca_rejected() -> None:
+    ca = x509.load_pem_x509_certificate(AV_ISSUER_CA_PEM.read_bytes())
+    with pytest.raises(UntrustedIssuer):
+        AnchorSet((ca,)).resolve(ca)
 
 
 def test_committed_credential_leaf_resolves_through_committed_anchor() -> None:
