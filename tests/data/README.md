@@ -34,3 +34,12 @@ Bytes the tests read but did not produce.
   `api_docs/test_tokens/IACA-token/AgeVerificationIssuer.IACA.01.EU.pem` (Apache-2.0).
   Captured 2026-07-08. Copied verbatim; byte-identical to
   `examples/site-dc-mdoc/anchors/eu-av-test.pem`.
+- `av-document-signer-001.pem` — the document signer under that CA, "Age Verification DS -
+  001": keyUsage `digitalSignature`, valid to 2026-09-24, and its signature verifies against
+  `av-issuer-ca-01.pem`. Its `issuerAltName` value is byte-identical to the CA's, so reading
+  `Certificate.extensions` raises the same `ValueError`. Implementations produce that by
+  copying the issuer certificate's extension verbatim; multipaz does so in
+  `multipaz-server/.../ServerIdentity.kt`, citing ISO 18013-5 table B.3. Source:
+  eu-digital-identity-wallet/av-dc-api-backend
+  `environment/trust-anchors/age-verification-testing-issuer.pem` (Apache-2.0) at clone HEAD
+  `24180068`. Captured 2026-08-04. Copied verbatim.

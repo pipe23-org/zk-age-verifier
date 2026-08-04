@@ -17,8 +17,17 @@ from zk_age_verifier.core.trustlist import AnchorSet, UntrustedIssuer, load_anch
 TEST_ANCHOR_PEM = Path(__file__).parents[1] / "integration" / "credentials" / "test-anchor.pem"
 VENDORED_ISSUER_X = 0xB4682EC20E06E8DF840B5DD32959798AB20C544D4DA50109FF4684D06FD261FC
 
-# A real certificate, not one this suite builds. See tests/data/README.md.
+# Real certificates, not ones this suite builds. See tests/data/README.md.
 AV_ISSUER_CA_PEM = Path(__file__).parents[1] / "data" / "av-issuer-ca-01.pem"
+AV_DOCUMENT_SIGNER_PEM = Path(__file__).parents[1] / "data" / "av-document-signer-001.pem"
+AV_DOCUMENT_SIGNER_X = 0x6789E96E797E2E04F7F3CBB54A12410412410DB000FB6D63DC977D8B5D35A4F9
+
+# Both real-certificate tests fail at the same point, reading the certificate's extensions.
+MALFORMED_EXTENSION = pytest.mark.xfail(
+    strict=True,
+    reason="Malformed value in a recognised extension raises ValueError from cryptography. "
+    "Blocks real-wallet e2e. Issue pending.",
+)
 
 NOW = datetime.now(UTC)
 
@@ -158,11 +167,15 @@ def test_non_p256_key_rejected() -> None:
         AnchorSet((cert,)).resolve(cert)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Malformed value in a recognised extension raises ValueError from cryptography. "
-    "Blocks real-wallet e2e. Issue pending.",
-)
+@MALFORMED_EXTENSION
+def test_real_document_signer_resolves_through_real_anchor() -> None:
+    anchor = x509.load_pem_x509_certificate(AV_ISSUER_CA_PEM.read_bytes())
+    signer = x509.load_pem_x509_certificate(AV_DOCUMENT_SIGNER_PEM.read_bytes())
+    x, _ = AnchorSet((anchor,)).resolve(signer)
+    assert x == AV_DOCUMENT_SIGNER_X
+
+
+@MALFORMED_EXTENSION
 def test_real_issuer_ca_rejected() -> None:
     ca = x509.load_pem_x509_certificate(AV_ISSUER_CA_PEM.read_bytes())
     with pytest.raises(UntrustedIssuer):
