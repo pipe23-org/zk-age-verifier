@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
+from structlog.testing import capture_logs
 
 from zk_age_verifier.config import ConfigError, TrustSource
 from zk_age_verifier.core import trustlist
@@ -17,17 +18,13 @@ from zk_age_verifier.core.trustlist import AnchorSet, UntrustedIssuer, load_anch
 TEST_ANCHOR_PEM = Path(__file__).parents[1] / "integration" / "credentials" / "test-anchor.pem"
 VENDORED_ISSUER_X = 0xB4682EC20E06E8DF840B5DD32959798AB20C544D4DA50109FF4684D06FD261FC
 
-# Real certificates, not ones this suite builds. See tests/data/README.md.
+# Real certificates, not ones this suite builds. See tests/data/README.md. Their
+# malformed issuerAltName makes reading Certificate.extensions raise ValueError,
+# so resolving them exercises the keyUsage DER fallback.
+# https://github.com/pipe23-org/zk-age-verifier/issues/35
 AV_ISSUER_CA_PEM = Path(__file__).parents[1] / "data" / "av-issuer-ca-01.pem"
 AV_DOCUMENT_SIGNER_PEM = Path(__file__).parents[1] / "data" / "av-document-signer-001.pem"
 AV_DOCUMENT_SIGNER_X = 0x6789E96E797E2E04F7F3CBB54A12410412410DB000FB6D63DC977D8B5D35A4F9
-
-# Both real-certificate tests fail at the same point, reading the certificate's extensions.
-MALFORMED_EXTENSION = pytest.mark.xfail(
-    strict=True,
-    reason="Malformed value in a recognised extension raises ValueError from cryptography. "
-    "Blocks real-wallet e2e. https://github.com/pipe23-org/zk-age-verifier/issues/35",
-)
 
 NOW = datetime.now(UTC)
 
@@ -56,6 +53,7 @@ def _cert(
     not_after: datetime | None = None,
     key_usage: x509.KeyUsage | None = None,
     with_key_usage: bool = True,
+    critical: bool = True,
 ) -> x509.Certificate:
     builder = (
         x509.CertificateBuilder()
@@ -68,7 +66,7 @@ def _cert(
     )
     if with_key_usage:
         usage = key_usage or _key_usage(digital_signature=not ca, key_cert_sign=ca)
-        builder = builder.add_extension(usage, critical=True)
+        builder = builder.add_extension(usage, critical=critical)
     if ca:
         builder = builder.add_extension(
             x509.BasicConstraints(ca=True, path_length=None), critical=True
@@ -167,19 +165,51 @@ def test_non_p256_key_rejected() -> None:
         AnchorSet((cert,)).resolve(cert)
 
 
-@MALFORMED_EXTENSION
 def test_real_document_signer_resolves_through_real_anchor() -> None:
     anchor = x509.load_pem_x509_certificate(AV_ISSUER_CA_PEM.read_bytes())
     signer = x509.load_pem_x509_certificate(AV_DOCUMENT_SIGNER_PEM.read_bytes())
-    x, _ = AnchorSet((anchor,)).resolve(signer)
+    with capture_logs() as logs:
+        x, _ = AnchorSet((anchor,)).resolve(signer)
     assert x == AV_DOCUMENT_SIGNER_X
+    assert any(entry["event"] == "key_usage_der_fallback" for entry in logs)
 
 
-@MALFORMED_EXTENSION
 def test_real_issuer_ca_rejected() -> None:
     ca = x509.load_pem_x509_certificate(AV_ISSUER_CA_PEM.read_bytes())
     with pytest.raises(UntrustedIssuer):
         AnchorSet((ca,)).resolve(ca)
+
+
+def test_der_fallback_agrees_with_the_extension_parse() -> None:
+    """The hand walker must agree with cryptography's KeyUsage parse.
+
+    The walker is only trusted where it agrees with the real parser; the two
+    committed real certificates are the only inputs it answers alone.
+    """
+    key = ec.generate_private_key(ec.SECP256R1())
+    certs = [
+        _cert(key, "ca", "ca", key, ca=True),
+        _cert(key, "leaf", "ca", key),
+        _cert(
+            key,
+            "both",
+            "both",
+            key,
+            key_usage=_key_usage(digital_signature=True, key_cert_sign=True),
+        ),
+        _cert(key, "all-false", "ca", key, key_usage=_key_usage()),
+        _cert(key, "non-critical", "ca", key, critical=False),
+        _cert(key, "no-extensions", "ca", key, with_key_usage=False),
+        _cert(key, "no-key-usage", "ca", key, ca=True, with_key_usage=False),
+    ]
+    for cert in certs:
+        for bit in ("digital_signature", "key_cert_sign"):
+            try:
+                extension = cert.extensions.get_extension_for_class(x509.KeyUsage)
+                expected = getattr(extension.value, bit)
+            except x509.ExtensionNotFound:
+                expected = False
+            assert trustlist._key_usage_from_tbs(cert.tbs_certificate_bytes, bit) == expected
 
 
 def test_committed_credential_leaf_resolves_through_committed_anchor() -> None:
