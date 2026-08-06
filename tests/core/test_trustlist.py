@@ -26,7 +26,7 @@ AV_DOCUMENT_SIGNER_X = 0x6789E96E797E2E04F7F3CBB54A12410412410DB000FB6D63DC977D8
 MALFORMED_EXTENSION = pytest.mark.xfail(
     strict=True,
     reason="Malformed value in a recognised extension raises ValueError from cryptography. "
-    "Blocks real-wallet e2e. Issue pending.",
+    "Blocks real-wallet e2e. https://github.com/pipe23-org/zk-age-verifier/issues/35",
 )
 
 NOW = datetime.now(UTC)
