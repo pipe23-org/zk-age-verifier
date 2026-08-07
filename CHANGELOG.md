@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Workaround for the malformed IACA and DS certificates, see
+  [#35](https://github.com/pipe23-org/zk-age-verifier/issues/35).
+
 ## 0.3.0 - 2026-08-03
 
 Dependency and documentation release. The release carries the corrected README to the
