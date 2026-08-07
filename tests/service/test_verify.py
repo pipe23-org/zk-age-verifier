@@ -145,7 +145,7 @@ async def test_wire_device_namespaces_reach_verify_unchanged(
 ) -> None:
     # No expressible presentation parses to a non-None value today; the parser
     # is bypassed to pin that the assumption substitutes only for absence.
-    wire_value = b"\xa1\x61a\xf5"
+    wire_value = cbor2.dumps({"a": True})
     cert, chain = _anchor_cert()
     recorded: dict[str, object] = {}
 
