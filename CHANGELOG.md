@@ -4,6 +4,7 @@
 
 - Workaround for the malformed IACA and DS certificates, see
   [#35](https://github.com/pipe23-org/zk-age-verifier/issues/35).
+- Bumped the demo compose's traefik to v3.7.
 
 ## 0.3.0 - 2026-08-03
 
