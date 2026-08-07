@@ -53,7 +53,7 @@ def client(
             yield live_client
         return
     config_file = tmp_path_factory.mktemp("config") / "config.toml"
-    config_file.write_text(render_config(backend=verifier_backend))
+    config_file.write_text(render_config(**{"pylongfellow.backend": verifier_backend}))
     with TestClient(create_app(load_config(config_file))) as test_client:
         yield test_client
 
