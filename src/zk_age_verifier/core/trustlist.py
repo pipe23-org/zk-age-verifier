@@ -21,12 +21,15 @@ from urllib.parse import urlsplit
 from urllib.request import urlopen
 from xml.etree import ElementTree
 
+import structlog
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from zk_age_verifier.config import ConfigError, TrustSource
+
+log = structlog.get_logger(__name__)
 
 
 class UntrustedIssuer(Exception):
@@ -110,7 +113,92 @@ def _key_usage_permits(cert: x509.Certificate, bit: str) -> bool:
         key_usage = cert.extensions.get_extension_for_class(x509.KeyUsage)
     except x509.ExtensionNotFound:
         return False
+    except ValueError as exc:
+        # https://github.com/pipe23-org/zk-age-verifier/issues/35
+        log.warning(
+            "key_usage_der_fallback",
+            subject=cert.subject.rfc4514_string(),
+            error=str(exc),
+        )
+        try:
+            return _key_usage_from_tbs(cert.tbs_certificate_bytes, bit)
+        except Exception as walker_exc:
+            log.warning(
+                "key_usage_unreadable",
+                subject=cert.subject.rfc4514_string(),
+                error=str(walker_exc),
+            )
+            return False
     return bool(getattr(key_usage.value, bit))
+
+
+# The rest of this block (both constants, _key_usage_from_tbs, _read_tlv)
+# exists only while the AV PKI ships certificates whose extensions cannot be
+# parsed. When issue #35 closes, delete the block and the ValueError branch in
+# _key_usage_permits.
+
+# The keyUsage extension's OID (2.5.29.15) as a complete DER OBJECT IDENTIFIER.
+_KEY_USAGE_OID_DER = b"\x06\x03\x55\x1d\x0f"
+# KeyUsage BIT STRING positions, per RFC 5280 section 4.2.1.3.
+_KEY_USAGE_BIT_INDEX = {"digital_signature": 0, "key_cert_sign": 5}
+
+
+def _key_usage_from_tbs(tbs: bytes, bit: str) -> bool:
+    """Read a keyUsage bit directly from the DER of a TBSCertificate.
+
+    Reading ``Certificate.extensions`` materialises every extension, so one
+    malformed extension makes keyUsage unreachable through the normal API. This
+    walk decodes only the keyUsage extension. An absent extensions block or
+    keyUsage extension asserts nothing, matching the ``ExtensionNotFound``
+    branch above.
+
+    Args:
+        tbs: The certificate's ``tbs_certificate_bytes``.
+        bit: The ``KeyUsage`` attribute name, e.g. ``"digital_signature"``.
+
+    Returns:
+        Whether the keyUsage extension is present and asserts the bit.
+    """
+    _, fields, _ = _read_tlv(tbs, 0)
+    offset = 0
+    while offset < len(fields):
+        tag, extensions, offset = _read_tlv(fields, offset)
+        if tag == 0xA3:  # the [3] EXPLICIT extensions field
+            break
+    else:
+        return False
+    _, extension_list, _ = _read_tlv(extensions, 0)
+    offset = 0
+    while offset < len(extension_list):
+        _, extension, offset = _read_tlv(extension_list, offset)
+        if extension.startswith(_KEY_USAGE_OID_DER):
+            break
+    else:
+        return False
+    tag, value, after = _read_tlv(extension, len(_KEY_USAGE_OID_DER))
+    if tag == 0x01:  # the critical BOOLEAN is omitted when false
+        tag, value, after = _read_tlv(extension, after)
+    _, bit_string, _ = _read_tlv(value, 0)
+    # BIT STRING content: one octet counting unused trailing bits, then the bits
+    # most significant first. DER drops trailing zero bits, so a position past
+    # the end is an unasserted bit.
+    bits = bit_string[1:]
+    octet, position = divmod(_KEY_USAGE_BIT_INDEX[bit], 8)
+    if octet >= len(bits):
+        return False
+    return bool(bits[octet] & (0x80 >> position))
+
+
+def _read_tlv(data: bytes, offset: int) -> tuple[int, bytes, int]:
+    """Read the DER element at ``offset``; return its tag, content, and end offset."""
+    tag = data[offset]
+    length = data[offset + 1]
+    offset += 2
+    if length & 0x80:
+        count = length & 0x7F
+        length = int.from_bytes(data[offset : offset + count], "big")
+        offset += count
+    return tag, data[offset : offset + length], offset + length
 
 
 def load_anchors(sources: list[TrustSource]) -> AnchorSet:

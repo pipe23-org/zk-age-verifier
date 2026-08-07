@@ -23,7 +23,7 @@ from zk_age_verifier.core.trustlist import AnchorSet
 log = structlog.get_logger(__name__)
 
 # CBOR true, the disclosed value every age check requires.
-_CLAIM_TRUE = b"\xf5"
+_CLAIM_TRUE = cbor2.dumps(True)
 
 # CBOR empty map: the DeviceNameSpaces value assumed when the wire carries
 # none (https://github.com/pipe23-org/pylongfellow/issues/29).
