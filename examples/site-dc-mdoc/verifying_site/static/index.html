@@ -22,14 +22,12 @@
       }
       #gate[data-state="idle"] .idle,
       #gate[data-state="checking"] .checking,
-      #gate[data-state="verifying"] .verifying,
       #gate[data-state="verified"] .verified,
       #gate[data-state="failed"] .failed,
       #gate[data-state="rejected"] .rejected {
         display: block;
       }
-      #gate[data-state="checking"] button,
-      #gate[data-state="verifying"] button {
+      #gate[data-state="checking"] button {
         pointer-events: none;
         opacity: 0.5;
       }
@@ -54,8 +52,7 @@
     <div id="gate" data-state="idle">
       <button onclick="startCheck()">Check my age</button>
 
-      <p class="state checking">Waiting for your wallet…</p>
-      <p class="state verifying">Verifying the proof…</p>
+      <p class="state checking">Verifying…</p>
       <p class="state verified">Verified. You are over 18.</p>
       <p class="state failed">Not verified: <code id="reason"></code></p>
       <p class="state rejected">No response from a wallet: <code id="detail"></code></p>
@@ -72,7 +69,7 @@
       window.startCheck = async () => {
         set("checking");
         try {
-          const verdict = await present(() => set("verifying"));
+          const verdict = await present();
           if (verdict.state === "verified") {
             set("verified");
           } else {
