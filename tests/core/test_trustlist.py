@@ -198,6 +198,7 @@ def test_unreadable_key_usage_rejected() -> None:
 
 
 def test_real_issuer_ca_rejected() -> None:
+    # https://github.com/pipe23-org/zk-age-verifier/issues/35
     ca = x509.load_pem_x509_certificate(AV_ISSUER_CA_PEM.read_bytes())
     with pytest.raises(UntrustedIssuer):
         AnchorSet((ca,)).resolve(ca)

@@ -31,7 +31,7 @@ def test_console_renderer_in_dev(
         json.loads(err)
 
 
-def test_json_carries_the_traceback(
+def test_json_carries_the_logged_exception_traceback(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("LOG_FORMAT", raising=False)
