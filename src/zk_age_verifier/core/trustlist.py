@@ -100,7 +100,8 @@ class AnchorSet:
 def _key_usage_permits(cert: x509.Certificate, bit: str) -> bool:
     """Report whether a certificate's keyUsage extension asserts the named bit.
 
-    A certificate carrying no keyUsage extension asserts nothing.
+    A certificate carrying no keyUsage extension asserts nothing, and so does
+    one whose keyUsage cannot be read at all.
 
     Args:
         cert: The certificate to inspect.
@@ -113,17 +114,29 @@ def _key_usage_permits(cert: x509.Certificate, bit: str) -> bool:
         key_usage = cert.extensions.get_extension_for_class(x509.KeyUsage)
     except x509.ExtensionNotFound:
         return False
-    except ValueError:
+    except ValueError as exc:
         # https://github.com/pipe23-org/zk-age-verifier/issues/35
         log.warning(
             "key_usage_der_fallback",
             subject=cert.subject.rfc4514_string(),
-            defect="malformed issuerAltName extension",
-            upstream="eu-digital-identity-wallet/av-srv-web-issuing-avw-py#13",
+            error=str(exc),
         )
-        return _key_usage_from_tbs(cert.tbs_certificate_bytes, bit)
+        try:
+            return _key_usage_from_tbs(cert.tbs_certificate_bytes, bit)
+        except Exception as walker_exc:
+            log.warning(
+                "key_usage_unreadable",
+                subject=cert.subject.rfc4514_string(),
+                error=str(walker_exc),
+            )
+            return False
     return bool(getattr(key_usage.value, bit))
 
+
+# The rest of this block (both constants, _key_usage_from_tbs, _read_tlv)
+# exists only while the AV PKI ships certificates whose extensions cannot be
+# parsed. When issue #35 closes, delete the block and the ValueError branch in
+# _key_usage_permits.
 
 # The keyUsage extension's OID (2.5.29.15) as a complete DER OBJECT IDENTIFIER.
 _KEY_USAGE_OID_DER = b"\x06\x03\x55\x1d\x0f"

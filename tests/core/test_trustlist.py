@@ -171,7 +171,39 @@ def test_real_document_signer_resolves_through_real_anchor() -> None:
     with capture_logs() as logs:
         x, _ = AnchorSet((anchor,)).resolve(signer)
     assert x == AV_DOCUMENT_SIGNER_X
-    assert any(entry["event"] == "key_usage_der_fallback" for entry in logs)
+    fallbacks = [entry for entry in logs if entry["event"] == "key_usage_der_fallback"]
+    assert fallbacks
+    assert fallbacks[0]["error"]
+
+
+def test_unreadable_key_usage_asserts_nothing() -> None:
+    """A certificate whose keyUsage content the fallback cannot read is rejected.
+
+    Certificate loading does not validate extension contents, so the walker can
+    meet keyUsage bytes that are themselves garbage. An empty extension value is
+    the minimal such certificate; the builder only expresses it as an
+    UnrecognizedExtension.
+    """
+    ca_key = ec.generate_private_key(ec.SECP256R1())
+    ca = _cert(ca_key, "CA", "CA", ca_key, ca=True)
+    ds_key = ec.generate_private_key(ec.SECP256R1())
+    ds = (
+        x509.CertificateBuilder()
+        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "DS")]))
+        .issuer_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "CA")]))
+        .public_key(ds_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(NOW - timedelta(days=1))
+        .not_valid_after(NOW + timedelta(days=365))
+        .add_extension(
+            x509.UnrecognizedExtension(x509.oid.ExtensionOID.KEY_USAGE, b""), critical=True
+        )
+        .sign(ca_key, hashes.SHA256())
+    )
+    with capture_logs() as logs:
+        with pytest.raises(UntrustedIssuer):
+            AnchorSet((ca,)).resolve(ds)
+    assert any(entry["event"] == "key_usage_unreadable" for entry in logs)
 
 
 def test_real_issuer_ca_rejected() -> None:
