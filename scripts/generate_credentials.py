@@ -122,7 +122,7 @@ def _accept(credential: bytes, issuer_key: ec.EllipticCurvePrivateKey, transcrip
     document = cbor2.loads(credential)["documents"][0]
     doc_type = document["docType"]
     namespace = _age_namespace(document)
-    claims = [mdoc.RequestedAttribute(namespace, "age_over_18", b"\xf5")]
+    claims = [mdoc.RequestedAttribute(namespace, "age_over_18", cbor2.dumps(True))]
     timestamp = datetime.now(UTC).replace(microsecond=0)
     proof = held.longfellow.prove(credential, issuer_public_key, transcript, claims, timestamp)
     held.longfellow.verify(

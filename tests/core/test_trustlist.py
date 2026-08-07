@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
+from structlog.testing import capture_logs
 
 from zk_age_verifier.config import ConfigError, TrustSource
 from zk_age_verifier.core import trustlist
@@ -16,6 +17,11 @@ from zk_age_verifier.core.trustlist import AnchorSet, UntrustedIssuer, load_anch
 # The test CA and the upstream test-issuer key its vendored leaf certifies.
 TEST_ANCHOR_PEM = Path(__file__).parents[1] / "integration" / "credentials" / "test-anchor.pem"
 VENDORED_ISSUER_X = 0xB4682EC20E06E8DF840B5DD32959798AB20C544D4DA50109FF4684D06FD261FC
+
+# Real certificates, not ones this suite builds. See tests/data/README.md.
+AV_ISSUER_CA_PEM = Path(__file__).parents[1] / "data" / "av-issuer-ca-01.pem"
+AV_DOCUMENT_SIGNER_PEM = Path(__file__).parents[1] / "data" / "av-document-signer-001.pem"
+AV_DOCUMENT_SIGNER_X = 0x6789E96E797E2E04F7F3CBB54A12410412410DB000FB6D63DC977D8B5D35A4F9
 
 NOW = datetime.now(UTC)
 
@@ -44,6 +50,7 @@ def _cert(
     not_after: datetime | None = None,
     key_usage: x509.KeyUsage | None = None,
     with_key_usage: bool = True,
+    critical: bool = True,
 ) -> x509.Certificate:
     builder = (
         x509.CertificateBuilder()
@@ -56,7 +63,7 @@ def _cert(
     )
     if with_key_usage:
         usage = key_usage or _key_usage(digital_signature=not ca, key_cert_sign=ca)
-        builder = builder.add_extension(usage, critical=True)
+        builder = builder.add_extension(usage, critical=critical)
     if ca:
         builder = builder.add_extension(
             x509.BasicConstraints(ca=True, path_length=None), critical=True
@@ -153,6 +160,76 @@ def test_non_p256_key_rejected() -> None:
     )
     with pytest.raises(UntrustedIssuer):
         AnchorSet((cert,)).resolve(cert)
+
+
+def test_real_document_signer_resolves_through_real_anchor() -> None:
+    anchor = x509.load_pem_x509_certificate(AV_ISSUER_CA_PEM.read_bytes())
+    signer = x509.load_pem_x509_certificate(AV_DOCUMENT_SIGNER_PEM.read_bytes())
+    with capture_logs() as logs:
+        x, _ = AnchorSet((anchor,)).resolve(signer)
+    assert x == AV_DOCUMENT_SIGNER_X
+    fallbacks = [entry for entry in logs if entry["event"] == "key_usage_der_fallback"]
+    assert fallbacks
+    assert fallbacks[0]["error"]
+
+
+def test_unreadable_key_usage_rejected() -> None:
+    """A certificate whose keyUsage content the fallback cannot read is rejected."""
+    ca_key = ec.generate_private_key(ec.SECP256R1())
+    ca = _cert(ca_key, "CA", "CA", ca_key, ca=True)
+    ds_key = ec.generate_private_key(ec.SECP256R1())
+    ds = (
+        x509.CertificateBuilder()
+        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "DS")]))
+        .issuer_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "CA")]))
+        .public_key(ds_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(NOW - timedelta(days=1))
+        .not_valid_after(NOW + timedelta(days=365))
+        .add_extension(
+            x509.UnrecognizedExtension(x509.oid.ExtensionOID.KEY_USAGE, b""), critical=True
+        )
+        .sign(ca_key, hashes.SHA256())
+    )
+    with capture_logs() as logs:
+        with pytest.raises(UntrustedIssuer):
+            AnchorSet((ca,)).resolve(ds)
+    assert any(entry["event"] == "key_usage_unreadable" for entry in logs)
+
+
+def test_real_issuer_ca_rejected() -> None:
+    # https://github.com/pipe23-org/zk-age-verifier/issues/35
+    ca = x509.load_pem_x509_certificate(AV_ISSUER_CA_PEM.read_bytes())
+    with pytest.raises(UntrustedIssuer):
+        AnchorSet((ca,)).resolve(ca)
+
+
+def test_der_fallback_agrees_with_pyca() -> None:
+    """_key_usage_from_tbs() must agree with cryptography's KeyUsage parse."""
+    key = ec.generate_private_key(ec.SECP256R1())
+    certs = [
+        _cert(key, "ca", "ca", key, ca=True),
+        _cert(key, "leaf", "ca", key),
+        _cert(
+            key,
+            "both",
+            "both",
+            key,
+            key_usage=_key_usage(digital_signature=True, key_cert_sign=True),
+        ),
+        _cert(key, "all-false", "ca", key, key_usage=_key_usage()),
+        _cert(key, "non-critical", "ca", key, critical=False),
+        _cert(key, "no-extensions", "ca", key, with_key_usage=False),
+        _cert(key, "no-key-usage", "ca", key, ca=True, with_key_usage=False),
+    ]
+    for cert in certs:
+        for bit in ("digital_signature", "key_cert_sign"):
+            try:
+                extension = cert.extensions.get_extension_for_class(x509.KeyUsage)
+                expected = getattr(extension.value, bit)
+            except x509.ExtensionNotFound:
+                expected = False
+            assert trustlist._key_usage_from_tbs(cert.tbs_certificate_bytes, bit) == expected
 
 
 def test_committed_credential_leaf_resolves_through_committed_anchor() -> None:

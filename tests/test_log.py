@@ -31,6 +31,21 @@ def test_console_renderer_in_dev(
         json.loads(err)
 
 
+def test_json_carries_the_logged_exception_traceback(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("LOG_FORMAT", raising=False)
+    configure_logging()
+    try:
+        raise ValueError("boom")
+    except ValueError:
+        structlog.get_logger().exception("engine-error")
+    record = json.loads(capsys.readouterr().err)
+    assert record["event"] == "engine-error"
+    assert "ValueError: boom" in record["exception"]
+    assert "exc_info" not in record
+
+
 def test_stdlib_logs_join_the_stream(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
