@@ -90,6 +90,12 @@ def create_app(client: httpx.AsyncClient | None = None) -> FastAPI:
         """Forward a wallet response to the verifier's presentation route for ``session``."""
         return await forward(request, f"{base}/sessions/{session}/presentation")
 
+    @app.get("/av/info")
+    async def info(request: Request) -> Response:
+        """Return the verifier's ``/health`` body untouched."""
+        upstream = await request.app.state.client.get(f"{base}/health")
+        return reply(upstream)
+
     @app.get("/", include_in_schema=False)
     async def index() -> FileResponse:
         """Serve the gate page."""

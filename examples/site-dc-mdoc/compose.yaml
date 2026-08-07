@@ -39,7 +39,10 @@ services:
       - traefik.http.services.demo.loadbalancer.server.port=8080
 
   verifier:
-    build: ../..
+    build:
+      context: ../..
+      args:
+        GIT_REF: ${DEMO_GIT_REF:-}
     restart: unless-stopped
     environment:
       ZK_AGE_VERIFIER_CONFIG: /etc/zk-age-verifier/config.toml

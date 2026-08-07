@@ -1,3 +1,4 @@
+import importlib.metadata
 from pathlib import Path
 
 import httpx
@@ -17,7 +18,21 @@ async def test_health(config_file: Path) -> None:
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["zk_age_verifier"] == importlib.metadata.version("zk-age-verifier")
+    assert body["pylongfellow"] == importlib.metadata.version("pylongfellow")
+    assert body["engine"] == "google-cpp"
+    assert body["ref"] is None
+
+
+async def test_health_reports_build_ref(config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ZK_AGE_VERIFIER_BUILD_REF", "abc1234")
+    app = create_app(load_config(config_file))
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health")
+    assert response.json()["ref"] == "abc1234"
 
 
 def test_lifespan_wires_store(config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
