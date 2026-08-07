@@ -2,12 +2,8 @@
 
 ## Unreleased
 
-- Trust-path keyUsage reads fall back to a direct DER walk of the certificate when
-  reading its extensions raises, and each engagement logs a warning. Works around the
-  malformed issuerAltName in the EU Age Verification PKI certificates
-  ([#35](https://github.com/pipe23-org/zk-age-verifier/issues/35),
-  upstream [av-srv-web-issuing-avw-py#13](https://github.com/eu-digital-identity-wallet/av-srv-web-issuing-avw-py/issues/13)).
-  The real IACA and document signer join the trust-path suite as regression fixtures.
+- Workaround for the malformed IACA and DS certificates, see
+  [#35](https://github.com/pipe23-org/zk-age-verifier/issues/35).
 
 ## 0.3.0 - 2026-08-03
 

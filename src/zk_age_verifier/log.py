@@ -21,9 +21,6 @@ def configure_logging() -> None:
     if os.environ.get("LOG_FORMAT") == "console":
         renderer = structlog.dev.ConsoleRenderer()
     else:
-        # ConsoleRenderer formats exceptions from exc_info on its own.
-        # JSONRenderer does not, so the traceback must be rendered into the
-        # event dict first or log.exception() emits only "exc_info": true.
         processors.append(structlog.processors.format_exc_info)
         renderer = structlog.processors.JSONRenderer()
     structlog.configure(

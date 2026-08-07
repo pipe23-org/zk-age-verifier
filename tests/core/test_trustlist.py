@@ -18,10 +18,7 @@ from zk_age_verifier.core.trustlist import AnchorSet, UntrustedIssuer, load_anch
 TEST_ANCHOR_PEM = Path(__file__).parents[1] / "integration" / "credentials" / "test-anchor.pem"
 VENDORED_ISSUER_X = 0xB4682EC20E06E8DF840B5DD32959798AB20C544D4DA50109FF4684D06FD261FC
 
-# Real certificates, not ones this suite builds. See tests/data/README.md. Their
-# malformed issuerAltName makes reading Certificate.extensions raise ValueError,
-# so resolving them exercises the keyUsage DER fallback.
-# https://github.com/pipe23-org/zk-age-verifier/issues/35
+# Real certificates, not ones this suite builds. See tests/data/README.md.
 AV_ISSUER_CA_PEM = Path(__file__).parents[1] / "data" / "av-issuer-ca-01.pem"
 AV_DOCUMENT_SIGNER_PEM = Path(__file__).parents[1] / "data" / "av-document-signer-001.pem"
 AV_DOCUMENT_SIGNER_X = 0x6789E96E797E2E04F7F3CBB54A12410412410DB000FB6D63DC977D8B5D35A4F9
@@ -176,14 +173,8 @@ def test_real_document_signer_resolves_through_real_anchor() -> None:
     assert fallbacks[0]["error"]
 
 
-def test_unreadable_key_usage_asserts_nothing() -> None:
-    """A certificate whose keyUsage content the fallback cannot read is rejected.
-
-    Certificate loading does not validate extension contents, so the walker can
-    meet keyUsage bytes that are themselves garbage. An empty extension value is
-    the minimal such certificate; the builder only expresses it as an
-    UnrecognizedExtension.
-    """
+def test_unreadable_key_usage_rejected() -> None:
+    """A certificate whose keyUsage content the fallback cannot read is rejected."""
     ca_key = ec.generate_private_key(ec.SECP256R1())
     ca = _cert(ca_key, "CA", "CA", ca_key, ca=True)
     ds_key = ec.generate_private_key(ec.SECP256R1())
@@ -212,12 +203,8 @@ def test_real_issuer_ca_rejected() -> None:
         AnchorSet((ca,)).resolve(ca)
 
 
-def test_der_fallback_agrees_with_the_extension_parse() -> None:
-    """The hand walker must agree with cryptography's KeyUsage parse.
-
-    The walker is only trusted where it agrees with the real parser; the two
-    committed real certificates are the only inputs it answers alone.
-    """
+def test_der_fallback_agrees_with_pyca() -> None:
+    """_key_usage_from_tbs() must agree with cryptography's KeyUsage parse."""
     key = ec.generate_private_key(ec.SECP256R1())
     certs = [
         _cert(key, "ca", "ca", key, ca=True),

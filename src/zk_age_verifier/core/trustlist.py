@@ -100,8 +100,7 @@ class AnchorSet:
 def _key_usage_permits(cert: x509.Certificate, bit: str) -> bool:
     """Report whether a certificate's keyUsage extension asserts the named bit.
 
-    A certificate carrying no keyUsage extension asserts nothing, and so does
-    one whose keyUsage cannot be read at all.
+    A certificate carrying no keyUsage extension asserts nothing.
 
     Args:
         cert: The certificate to inspect.
