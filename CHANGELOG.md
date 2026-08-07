@@ -7,6 +7,7 @@
 - Bumped the demo compose's traefik to v3.7.
 - Renamed the `[service]` key `backend` to `pylongfellow.backend`; the "Backends" docs
   page is now "Proof engine".
+- Bumped pylongfellow to 0.5.1 (#47).
 
 ## 0.3.0 - 2026-08-03
 
