@@ -24,3 +24,22 @@ Bytes the tests read but did not produce.
   commit and date. Its transcript equals `upstream-verifier-service-request.json`'s
   `Transcript` field byte-for-byte; `tests/integration/test_mdl_specimen.py` asserts
   the equality.
+- `av-issuer-ca-01.pem` — the Commission's Age Verification test IACA, "Age Verification
+  Issuer CA 01": self-signed, `CA:TRUE`, keyUsage `keyCertSign` and `cRLSign`, valid to
+  2034-09-27. Its non-critical `issuerAltName` (2.5.29.18) does not decode as `GeneralNames`:
+  the extension value carries a second copy of the whole extension, whose inner URI is tagged
+  `[2] dNSName` rather than `[6] uniformResourceIdentifier`. `cryptography` decodes every
+  extension whose OID it recognises, so reading `Certificate.extensions` on this file raises
+  `ValueError`. Source: eu-digital-identity-wallet/av-srv-web-issuing-avw-py
+  `api_docs/test_tokens/IACA-token/AgeVerificationIssuer.IACA.01.EU.pem` (Apache-2.0).
+  Captured 2026-07-08. Copied verbatim; byte-identical to
+  `examples/site-dc-mdoc/anchors/eu-av-test.pem`.
+- `av-document-signer-001.pem` — the document signer under that CA, "Age Verification DS -
+  001": keyUsage `digitalSignature`, valid to 2026-09-24, and its signature verifies against
+  `av-issuer-ca-01.pem`. Its `issuerAltName` value is byte-identical to the CA's, so reading
+  `Certificate.extensions` raises the same `ValueError`. Implementations produce that by
+  copying the issuer certificate's extension verbatim; multipaz does so in
+  `multipaz-server/.../ServerIdentity.kt`, citing ISO 18013-5 table B.3. Source:
+  eu-digital-identity-wallet/av-dc-api-backend
+  `environment/trust-anchors/age-verification-testing-issuer.pem` (Apache-2.0) at clone HEAD
+  `24180068`. Captured 2026-08-04. Copied verbatim.

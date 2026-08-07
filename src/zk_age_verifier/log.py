@@ -21,6 +21,7 @@ def configure_logging() -> None:
     if os.environ.get("LOG_FORMAT") == "console":
         renderer = structlog.dev.ConsoleRenderer()
     else:
+        processors.append(structlog.processors.format_exc_info)
         renderer = structlog.processors.JSONRenderer()
     structlog.configure(
         processors=[*processors, structlog.stdlib.ProcessorFormatter.wrap_for_formatter],

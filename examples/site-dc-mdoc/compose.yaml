@@ -2,10 +2,11 @@ name: zk_age_verifier_demo
 
 services:
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.7
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=zk_age_verifier_demo_edge
       - --providers.file.directory=/etc/traefik/dynamic
       - --entrypoints.websecure.address=:443
     ports:

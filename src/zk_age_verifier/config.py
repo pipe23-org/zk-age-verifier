@@ -57,13 +57,21 @@ def validate_origin(value: str) -> str:
     return value
 
 
+class PylongfellowConfig(BaseModel):
+    """The ``pylongfellow`` keys under ``[service]``: proof-engine selection."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    backend: str = "google-cpp"
+
+
 class ServiceConfig(BaseModel):
-    """The ``[service]`` table: origin binding, backend selection, and session hygiene."""
+    """The ``[service]`` table: origin binding, proof-engine selection, and session hygiene."""
 
     model_config = ConfigDict(extra="forbid")
 
     expected_origin: str
-    backend: str = "google-cpp"
+    pylongfellow: PylongfellowConfig = Field(default_factory=PylongfellowConfig)
     session_ttl_seconds: int = 300
     session_cap: int = 1000
     timestamp_skew_seconds: int = 300
