@@ -31,7 +31,7 @@ def test_lifespan_wires_store(config_file: Path, monkeypatch: pytest.MonkeyPatch
 
 def test_unknown_backend_fails_startup(tmp_path: Path) -> None:
     path = tmp_path / "config.toml"
-    path.write_text(render_config(backend="no-such-backend"))
+    path.write_text(render_config(**{"pylongfellow.backend": "no-such-backend"}))
     app = create_app(load_config(path))
     with pytest.raises(ValueError, match="unknown backend"):
         with TestClient(app):

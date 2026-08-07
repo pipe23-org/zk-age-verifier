@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Workaround for the malformed IACA and DS certificates, see
+  [#35](https://github.com/pipe23-org/zk-age-verifier/issues/35).
+- Bumped the demo compose's traefik to v3.7.
+- Renamed the `[service]` key `backend` to `pylongfellow.backend`; the "Backends" docs
+  page is now "Proof engine".
+
 ## 0.3.0 - 2026-08-03
 
 Dependency and documentation release. The release carries the corrected README to the
