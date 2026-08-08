@@ -10,6 +10,7 @@
 - Bumped pylongfellow to 0.5.1 (#47).
 - Bumped pylongfellow to 0.5.2; the requirement is now the exact version `==0.5.2`,
   replacing the `>=0.5.1,<0.6` range (#48).
+- add version strings to example page.
 
 ## 0.3.0 - 2026-08-03
 
