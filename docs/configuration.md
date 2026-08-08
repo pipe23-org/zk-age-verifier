@@ -35,7 +35,7 @@ anchors fail startup.
 and `__` separates nesting levels, so `ZK_AGE_VERIFIER_SERVICE__PYLONGFELLOW__BACKEND`
 overrides `pylongfellow.backend` under `[service]`. 
 
-Lists and tables — a [[trust.sources]] entry, cors_allowed_origins — cannot be set from the environment 
+Lists and tables — a `[[trust.sources]]` entry, `cors_allowed_origins` — cannot be set from the environment 
 and must be written in the TOML file.
 
 `LOG_FORMAT=console` switches log output from JSON lines to console rendering. It is read
