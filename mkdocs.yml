@@ -19,5 +19,5 @@ plugins:
 
 nav:
   - Home: index.md
-  - Proof engine: proof-engine.md
+  - Configuration: configuration.md
   - HTTP API: api.md
