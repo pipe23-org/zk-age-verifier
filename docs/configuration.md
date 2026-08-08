@@ -6,9 +6,8 @@ The verifier reads a TOML file with two tables, `[service]` and `[trust]`, passe
 ## [service]
 
 - `expected_origin` (required) — the origin the service accepts presentations for, a bare
-  `scheme://host[:port]` with no path, query, or fragment; `http` or `https`. The origin is
-  hashed into the presentation transcript, so it must equal the origin the presentation
-  asserts.
+  `scheme://host[:port]`. The origin is hashed into the presentation transcript, so it must 
+   correspond to the origin that the presentation asserts.
 - `pylongfellow.backend` (default `google-cpp`) — the proof engine, see
   [Proof engine](#proof-engine).
 - `session_ttl_seconds` (default `300`) — seconds a session stays usable after creation.
@@ -34,10 +33,10 @@ anchors fail startup.
 
 `ZK_AGE_VERIFIER_SECTION__KEY` overrides a scalar value: `ZK_AGE_VERIFIER_` is the prefix
 and `__` separates nesting levels, so `ZK_AGE_VERIFIER_SERVICE__PYLONGFELLOW__BACKEND`
-overrides `pylongfellow.backend` under `[service]`. Structure — lists and nested tables —
-comes from the TOML file. An unknown key under a known section is rejected; an unknown
-top-level prefixed variable is ignored. Source priority, highest first: environment
-variables, the TOML file, model defaults.
+overrides `pylongfellow.backend` under `[service]`. 
+
+Lists and tables — a [[trust.sources]] entry, cors_allowed_origins — cannot be set from the environment 
+and must be written in the TOML file.
 
 `LOG_FORMAT=console` switches log output from JSON lines to console rendering. It is read
 from the environment only and takes no prefix.
@@ -47,14 +46,7 @@ from the environment only and takes no prefix.
 The `pylongfellow.backend` key selects the proof engine the service verifies with.
 Registry names: `google-cpp` (google/longfellow-zk), `isrg-rust`
 (abetterinternet/zk-cred-longfellow). Both ship in the default pylongfellow install. An
-unknown or unbuilt name fails startup. pylongfellow upstream is not benchmarked as of
-2026-07-30.
+unknown or unbuilt name fails startup.
 
-### Verification scope
-
-The engines disagree over whether `DeviceNameSpacesBytes` is a verifier input, and the ZK
-response format has no field for it; the record is
-[pipe23-org/pylongfellow#29](https://github.com/pipe23-org/pylongfellow/issues/29).
-google-cpp fixes the value to the empty map internally; isrg-rust takes it as input and
-receives the empty map from this service (`core/engine/mdoc_zk.py`). A verified verdict
-under either engine means the proof holds for a device that signed an empty namespace map.
+Open issues on [pylongfellow](https://github.com/pipe23-org/pylongfellow) detail any known problems
+with these backends.
