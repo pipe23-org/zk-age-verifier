@@ -30,6 +30,26 @@ def test_session_opens_with_server_side_checks(client: TestClient, verifier: Ver
     assert json.loads(forwarded.content) == {"checks": ["age_over_18"]}
 
 
+def test_info_forwards_verifier_health(client: TestClient, verifier: Verifier) -> None:
+    verifier.response = httpx.Response(
+        200,
+        json={
+            "status": "ok",
+            "zk_age_verifier": "0.3.0",
+            "pylongfellow": "0.5.0",
+            "engine": "google-cpp",
+            "ref": "abc1234",
+        },
+    )
+    reply = client.get("/av/info")
+
+    assert reply.status_code == 200
+    assert reply.json()["engine"] == "google-cpp"
+    (forwarded,) = verifier.requests
+    assert forwarded.method == "GET"
+    assert str(forwarded.url) == f"{VERIFIER_URL}/health"
+
+
 def test_session_passes_problem_json_through(client: TestClient, verifier: Verifier) -> None:
     verifier.response = httpx.Response(
         400,

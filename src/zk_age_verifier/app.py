@@ -4,6 +4,7 @@ import asyncio
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
+from importlib.metadata import version
 from typing import Literal
 
 from fastapi import FastAPI
@@ -45,6 +46,10 @@ class HealthStatus(BaseModel):
     """The ``/health`` 200 body."""
 
     status: Literal["ok"]
+    zk_age_verifier: str
+    pylongfellow: str
+    engine: str
+    ref: str | None
 
 
 def create_app(config: Config) -> FastAPI:
@@ -99,8 +104,14 @@ def create_app(config: Config) -> FastAPI:
         response_description="Service is up",
     )
     async def health() -> HealthStatus:
-        """Report that the service process is up."""
-        return HealthStatus(status="ok")
+        """Report that the service process is up, and what it is running."""
+        return HealthStatus(
+            status="ok",
+            zk_age_verifier=version("zk-age-verifier"),
+            pylongfellow=version("pylongfellow"),
+            engine=config.service.pylongfellow.backend,
+            ref=os.environ.get("ZK_AGE_VERIFIER_BUILD_REF"),
+        )
 
     return app
 

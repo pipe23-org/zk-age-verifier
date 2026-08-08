@@ -14,6 +14,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 RUN chmod +x /app/docker-entrypoint.sh
 
 FROM python:3.11-slim-bookworm
+ARG GIT_REF=""
+ENV ZK_AGE_VERIFIER_BUILD_REF=$GIT_REF
 RUN useradd --create-home app
 COPY --from=builder --chown=app:app /app /app
 ENV PATH="/app/.venv/bin:$PATH"

@@ -47,12 +47,12 @@
   </head>
   <body>
     <h1>Age check</h1>
-    <p>Prove you are over 18 with your wallet. No name, no birthdate, no account — one bit.</p>
+    <p>Prove you are over 18 with your wallet.</p>
 
     <div id="gate" data-state="idle">
       <button onclick="startCheck()">Check my age</button>
 
-      <p class="state checking">Waiting for your wallet…</p>
+      <p class="state checking">Verifying…</p>
       <p class="state verified">Verified. You are over 18.</p>
       <p class="state failed">Not verified: <code id="reason"></code></p>
       <p class="state rejected">No response from a wallet: <code id="detail"></code></p>
@@ -82,6 +82,20 @@
           set("rejected");
         }
       };
+
+      fetch("/av/info")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((info) => {
+          if (!info) return;
+          const ref = info.ref ? ` (${info.ref.slice(0, 9)})` : "";
+          document.getElementById("info").textContent =
+            `zk-age-verifier ${info.zk_age_verifier}${ref} · ` +
+            `pylongfellow ${info.pylongfellow} · ${info.engine}`;
+        })
+        .catch(() => {});
     </script>
+    <footer>
+      <p id="info" style="font-size: 0.8rem; opacity: 0.6"></p>
+    </footer>
   </body>
 </html>
