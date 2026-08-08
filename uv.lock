@@ -1274,7 +1274,7 @@ wheels = [
 
 [[package]]
 name = "pylongfellow"
-version = "0.5.1"
+version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cbor2" },
@@ -1282,16 +1282,16 @@ dependencies = [
     { name = "cryptography" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/50/c0/5c8e3a411a1f1e276d424e868f39f404390ad54837e5920e938e4d117423/pylongfellow-0.5.1.tar.gz", hash = "sha256:33fe942c099a1240edc0f298f25f4fff7365c636d2d8c1a0b37e46d09259dc03", size = 20355289, upload-time = "2026-08-07T19:14:42.509Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/5c/ad9c948e1d472218ffdc9c3fa9326083815ff9b7e4c582c9aa51b6c91358/pylongfellow-0.5.2.tar.gz", hash = "sha256:f8abb7ddbb59b3d83a55496a462510026b19ca11c02881789208bd975a2f37e1", size = 20355153, upload-time = "2026-08-07T22:07:39.864Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/91/12/0f4d2da6f2504ebb0fe5964468984f07706c570ea939775eeefa261565cb/pylongfellow-0.5.1-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:6340b30c3182fa5b6125730ec4713f23f05491e3c5085a0859668fea0c55a1d4", size = 2732618, upload-time = "2026-08-07T19:14:22.709Z" },
-    { url = "https://files.pythonhosted.org/packages/3d/d3/10d8d483a889603a3dbefece0c6451b48292b423db80ffd7311cf151e5d2/pylongfellow-0.5.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:988108f24a43418a2ad6dde4d98c85cd6d43609843371b1318af4667e50a2e82", size = 4384827, upload-time = "2026-08-07T19:14:25.325Z" },
-    { url = "https://files.pythonhosted.org/packages/69/c7/5e62e5188f0ebc8002ebd142178b39951c701d0f884cab3c56b36cf4b29c/pylongfellow-0.5.1-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:8660303843f8c92a077e7b5dc170d1a8d57fca05bdd0b427bb4965831bb66c60", size = 2732667, upload-time = "2026-08-07T19:14:28.004Z" },
-    { url = "https://files.pythonhosted.org/packages/14/95/ef96013352f6e45e972f8465a7eef10ee1d5e835fb4324681c94d6df937b/pylongfellow-0.5.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:d5257b593943d9dabbac8708ec72beae300480dfad310f7c6b86155fb04c3b19", size = 4384825, upload-time = "2026-08-07T19:14:30.044Z" },
-    { url = "https://files.pythonhosted.org/packages/90/33/dc6069de4ea1f675eb7578bc04ccbbb260b6fa63744d8d11b6923134e7c0/pylongfellow-0.5.1-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:a2d85dbb1ab981910e64827edbf094695bedd882255eac5a5e0270aab5a030ab", size = 2732670, upload-time = "2026-08-07T19:14:32.407Z" },
-    { url = "https://files.pythonhosted.org/packages/95/7d/0223f54a9441d26d5269b760cf39f2e22dc73d1bb59571eee9269989cd69/pylongfellow-0.5.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:d61c4377e33a6c4dc1412cd44506576f34cc22fb2bbb4bc1b783e576e7269b65", size = 4384826, upload-time = "2026-08-07T19:14:34.442Z" },
-    { url = "https://files.pythonhosted.org/packages/d0/53/479c8f2cdd82a55539dad66c8b3fefe2c29138a5bab100d3f4ba5e6b32b2/pylongfellow-0.5.1-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:a80f2682a1cbe47b92d85ba4f3eda7b2a4c746835a20fbeddd4c6da664e44d18", size = 2732670, upload-time = "2026-08-07T19:14:36.607Z" },
-    { url = "https://files.pythonhosted.org/packages/eb/c2/76011816bac46352458310e2f69e2e1475acd8d5838d9904c21cef11077b/pylongfellow-0.5.1-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:372987c35ef292467ef78938c9efe0408b608cc4088d56e2ea98f1315e4538f2", size = 4384820, upload-time = "2026-08-07T19:14:38.671Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/63/0b76708c6a3f3ff63c612c5ee0341db7d32927ed8dfaa8ae848ea59c50fa/pylongfellow-0.5.2-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:d209af443e52e7522906ec874ea359aba1a0647cba0b2dd4b9d8e5734530ef1d", size = 2720240, upload-time = "2026-08-07T22:07:26.919Z" },
+    { url = "https://files.pythonhosted.org/packages/35/2f/3f5650ca06026056d410433c5a8a60c7311fa5f03d13d76033019b99bf3b/pylongfellow-0.5.2-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:e62fc04cd4b05cdcea3815b68c8633fabe050424e244140ebeec1d2caa4eccac", size = 4371540, upload-time = "2026-08-07T22:07:28.842Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/90/294f77b543882920cf047f83c59a5c8ba0c31c905a39964ae093c3825ba4/pylongfellow-0.5.2-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:1223ade17298884fddfc1da903994dec75a7cab1134fb1f979870c80a2edd9a7", size = 2720289, upload-time = "2026-08-07T22:07:30.447Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/59/60b27ec3c7f83ea4d57d1093993aee223e3a8d3bd97962dec795baf48ff2/pylongfellow-0.5.2-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:3357e40c5a2f0293748e339e1cd5c2d1a178ea0a6d6a5f73020c166b94415995", size = 4371534, upload-time = "2026-08-07T22:07:31.935Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/29/9b9b2203ee906cd14a56ee5846d0bc9667f2e18053c8e3ab57e44d0d91d1/pylongfellow-0.5.2-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:1fe65dab0cebde86a06520bd6130377c532bfd557ed72effc145cea92380e057", size = 2720289, upload-time = "2026-08-07T22:07:33.458Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/c6/d69d93c02095f54a31f55edfcb653645ac7a137256d2a2650659bbfef64f/pylongfellow-0.5.2-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:bde3d2a243b896597a353d67dc36ec32c4976cc2bdac82e36148654b0bf2f314", size = 4371538, upload-time = "2026-08-07T22:07:35.129Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/04/44ae6e38ab9fde4f2bf36cf2fb0f8f947c053291d34a935ad581b76032ec/pylongfellow-0.5.2-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:e78c9baa488770b3ee91f4a5287602a9763e56005de9f07972bcc91d98b08b79", size = 2720293, upload-time = "2026-08-07T22:07:36.58Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/34/26266f73a646f857a70bb3120f422bb788466e8c83887cdc3e0b4f10fcf4/pylongfellow-0.5.2-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:177c579ae75d181592205ea85f000a37bd347e6672310e6116816404a7afde8c", size = 4371534, upload-time = "2026-08-07T22:07:38.254Z" },
 ]
 
 [[package]]
@@ -1687,7 +1687,7 @@ requires-dist = [
     { name = "granian" },
     { name = "pydantic-settings" },
     { name = "pyhpke", specifier = ">=0.6.5" },
-    { name = "pylongfellow", specifier = ">=0.5.1,<0.6" },
+    { name = "pylongfellow", specifier = "==0.5.2" },
     { name = "structlog" },
 ]
 
