@@ -32,7 +32,7 @@ dependencies = [
     "granian",
     "pydantic-settings",
     "pyhpke>=0.6.5",
-    "pylongfellow>=0.5.1,<0.6",
+    "pylongfellow==0.5.2",
     "structlog",
 ]
 
