@@ -9,5 +9,6 @@ submitted (`POST /sessions/{session_id}/presentation`) and the verdict returns o
 call: `{"age_over_18": true}` or a failure reason. The service stores no identifier for the
 person the verdict describes.
 
-The [HTTP API](api.md) page documents the full surface, generated from the service's OpenAPI
-schema.
+The [Configuration](configuration.md) page documents the `[service]` and `[trust]` keys and
+the environment-variable overrides. The [HTTP API](api.md) page documents the full surface,
+generated from the service's OpenAPI schema.
