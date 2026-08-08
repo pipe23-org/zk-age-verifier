@@ -3,9 +3,8 @@
 The verifier reads a TOML file with two tables, ``[service]`` and ``[trust]``.
 Environment variables named ``ZK_AGE_VERIFIER_SECTION__KEY`` override scalar
 values within a section; ``ZK_AGE_VERIFIER_`` is the prefix and ``__`` separates
-nesting levels. Lists and tables (a ``[[trust.sources]]`` entry,
-``cors_allowed_origins``) cannot be set from the environment and must be
-written in the TOML file.
+nesting levels. Lists and tables cannot be set from the environment and must
+be written in the TOML file.
 Unprefixed environment variables are ignored. Unknown keys in the TOML file are
 rejected, as is an unknown key nested under a known section in a prefixed
 environment variable (``ZK_AGE_VERIFIER_SERVICE__BOGUS``). An unknown top-level
