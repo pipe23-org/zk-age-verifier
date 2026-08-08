@@ -69,23 +69,55 @@ of the service.
 
 ## Configuration
 
-Two TOML tables, `[service]` and `[trust]`, passed with `--config`.
+The verifier reads a TOML file with two tables, `[service]` and `[trust]`, passed with
+`--config`. Scalar values can be overridden with environment variables.
 
-- `expected_origin` (required) — the exact `scheme://host[:port]` origin the presentation asserts.
-- `pylongfellow.backend` (default `google-cpp`) — the proof engine, `google-cpp` or `isrg-rust`; an unknown or unbuilt name fails startup.
-- `session_ttl_seconds` (default 300) — session lifetime.
-- `session_cap` (default 1000) — live-session limit; `POST /sessions` returns 503 at the cap.
-- `timestamp_skew_seconds` (default 300) — proofs whose timestamp differs from the current time by more than this fail `stale-proof`.
-- `cors_allowed_origins` (default `[]`) — origins for which CORS headers are emitted.
-- `trust.sources` (required) — non-empty list; each entry sets one of `pem` (a PEM file or directory of issuer CA certs) or `etsi_xml` (an ETSI trusted-list https URL or file path).
+### [service]
 
-A presented document-signer certificate must carry the keyUsage extension asserting digitalSignature; an anchor accepted as the issuer of a chained leaf must assert keyCertSign.
+- `expected_origin` (required) — the origin the service accepts presentations for, a bare
+  `scheme://host[:port]`. The origin is hashed into the presentation transcript, so it must
+  correspond to the origin that the presentation asserts.
+- `pylongfellow.backend` (default `google-cpp`) — the proof engine, see
+  [Proof engine](#proof-engine).
+- `session_ttl_seconds` (default `300`) — seconds a session stays usable after creation.
+- `session_cap` (default `1000`) — maximum live sessions; session creation is rejected at
+  the cap. Expired sessions are swept before the cap is enforced.
+- `timestamp_skew_seconds` (default `300`) — allowed difference in either direction between
+  the proof timestamp and the verifier clock.
+- `cors_allowed_origins` (default empty) — origins granted cross-origin access to the API.
+  An empty list sends no CORS headers.
 
-Configured trust sources merge into one anchor set. Any anchor in that set can vouch for a certificate that signs age credentials. The certificate layer carries no required marker restricting what an anchor's certificates may sign. ETSI TS 119 412-6 clause 6 places no type indicator on EAA signing certificates. The `trust.sources` list must name only anchors intended to vouch for age credentials. A mixed-purpose or broad list authorizes every CA on it as an age-credential issuer.
+### [trust]
 
-Environment variables `ZK_AGE_VERIFIER_<SECTION>__<KEY>` override scalar values; lists and
-nested tables come from the TOML file only. Environment variables take precedence over the
-TOML file, which takes precedence over the defaults.
+`[[trust.sources]]` entries form a non-empty list. Each entry sets exactly one of:
+
+- `pem` — a PEM file, or a directory whose `*.pem` files are all loaded.
+- `etsi_xml` — an ETSI trusted list, path or URL; its certificates become anchors.
+
+Every listed anchor is authorized to vouch for age credentials; a mixed-purpose or broad
+list authorizes every CA on it as an age-credential issuer. Sources that resolve to zero
+anchors fail startup.
+
+### Environment variables
+
+`ZK_AGE_VERIFIER_SECTION__KEY` overrides a scalar value: `ZK_AGE_VERIFIER_` is the prefix
+and `__` separates nesting levels, so `ZK_AGE_VERIFIER_SERVICE__PYLONGFELLOW__BACKEND`
+overrides `pylongfellow.backend` under `[service]`.
+
+Lists and tables cannot be set from the environment and must be written in the TOML file.
+
+`LOG_FORMAT=console` switches log output from JSON lines to console rendering. It is read
+from the environment only and takes no prefix.
+
+### Proof engine
+
+The `pylongfellow.backend` key selects the proof engine the service verifies with.
+Registry names: `google-cpp` (google/longfellow-zk), `isrg-rust`
+(abetterinternet/zk-cred-longfellow). Both ship in the default pylongfellow install. An
+unknown or unbuilt name fails startup.
+
+Open issues on [pylongfellow](https://github.com/pipe23-org/pylongfellow) detail any known
+problems with these backends.
 
 ## Documentation
 
