@@ -60,7 +60,8 @@ POST /sessions/{session_id}/presentation
 {"state": "failed", "reason": "decrypt-failed"}
 ```
 
-`GET /health` returns `{"status": "ok"}` while the process is up.
+`GET /health` returns `{"status": "ok", "zk_age_verifier": "0.4.0", "pylongfellow": "0.5.2",
+"engine": "google-cpp", "ref": null}` while the process is up.
 
 `GET /debug/transcript/{session_id}` returns the transcript inputs stored for a session — the
 origin and the `encryptionInfo` string — with the handover hash and session-transcript bytes
