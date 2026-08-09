@@ -94,9 +94,8 @@ The verifier reads a TOML file with two tables, `[service]` and `[trust]`, passe
 - `pem` — a PEM file, or a directory whose `*.pem` files are all loaded.
 - `etsi_xml` — an ETSI trusted list, path or URL; its certificates become anchors.
 
-Every listed anchor is authorized to vouch for age credentials; a mixed-purpose or broad
-list authorizes every CA on it as an age-credential issuer. Sources that resolve to zero
-anchors fail startup.
+Every listed anchor is authorized to vouch for age credentials. Sources that resolve to
+zero anchors fail startup.
 
 ### Environment variables
 
