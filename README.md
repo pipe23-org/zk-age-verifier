@@ -60,7 +60,8 @@ POST /sessions/{session_id}/presentation
 {"state": "failed", "reason": "decrypt-failed"}
 ```
 
-`GET /health` returns `{"status": "ok"}` while the process is up.
+`GET /health` returns `{"status": "ok", "zk_age_verifier": "0.4.0", "pylongfellow": "0.5.2",
+"engine": "google-cpp", "ref": null}` while the process is up.
 
 `GET /debug/transcript/{session_id}` returns the transcript inputs stored for a session — the
 origin and the `encryptionInfo` string — with the handover hash and session-transcript bytes
@@ -94,9 +95,8 @@ The verifier reads a TOML file with two tables, `[service]` and `[trust]`, passe
 - `pem` — a PEM file, or a directory whose `*.pem` files are all loaded.
 - `etsi_xml` — an ETSI trusted list, path or URL; its certificates become anchors.
 
-Every listed anchor is authorized to vouch for age credentials; a mixed-purpose or broad
-list authorizes every CA on it as an age-credential issuer. Sources that resolve to zero
-anchors fail startup.
+Every listed anchor is authorized to vouch for age credentials. Sources that resolve to
+zero anchors fail startup.
 
 ### Environment variables
 
