@@ -5,8 +5,9 @@ Environment variables named ``ZK_AGE_VERIFIER_SECTION__KEY`` override scalar
 values within a section; ``ZK_AGE_VERIFIER_`` is the prefix and ``__`` separates
 nesting levels. Lists and tables cannot be set from the environment and must
 be written in the TOML file.
-Unprefixed environment variables are ignored. Unknown keys in the TOML file are
-rejected, as is an unknown key nested under a known section in a prefixed
+Unprefixed environment variables are ignored. Table and key names in the TOML
+file are case-sensitive; environment variable names are not. Unknown keys in
+the TOML file are rejected, as is an unknown key nested under a known section in a prefixed
 environment variable (``ZK_AGE_VERIFIER_SERVICE__BOGUS``). An unknown top-level
 prefixed environment variable (``ZK_AGE_VERIFIER_BOGUS``) is silently ignored
 by pydantic-settings.
@@ -22,6 +23,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
+    EnvSettingsSource,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
     TomlConfigSettingsSource,
@@ -126,6 +128,7 @@ class Config(BaseSettings):
         env_prefix="ZK_AGE_VERIFIER_",
         env_nested_delimiter="__",
         extra="forbid",
+        case_sensitive=True,
     )
 
     service: ServiceConfig
@@ -160,10 +163,15 @@ def load_config(path: str | Path) -> Config:
             dotenv_settings: PydanticBaseSettingsSource,
             file_secret_settings: PydanticBaseSettingsSource,
         ) -> tuple[PydanticBaseSettingsSource, ...]:
-            """Order the sources: init, env, then this call's TOML file."""
+            """Order the sources: init, env, then this call's TOML file.
+
+            `case_sensitive=True` on the model keeps TOML table and key names
+            exact; the environment source is built case-insensitive so the
+            documented upper-case variable names keep matching.
+            """
             return (
                 init_settings,
-                env_settings,
+                EnvSettingsSource(settings_cls, case_sensitive=False),
                 TomlConfigSettingsSource(settings_cls, toml_file=file),
             )
 

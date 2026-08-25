@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Configuration file table and key names are matched case-sensitively; environment variable names are not. Previously the TOML source relied on pydantic-settings' default, which pydantic-settings 2.15 changed to case-insensitive for top-level tables.
+
 ## 0.4.0 - 2026-08-08
 
 - Workaround for the malformed IACA and DS certificates, see

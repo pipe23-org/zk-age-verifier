@@ -86,6 +86,18 @@ def test_unknown_top_level_prefixed_env_ignored(
     assert config.service.session_cap == 1000
 
 
+def test_capitalised_toml_table_rejected(tmp_path: Path) -> None:
+    body = BASE_CONFIG.replace("[service]", "[Service]")
+    with pytest.raises(ConfigError, match="invalid configuration"):
+        load_config(_write(tmp_path, body))
+
+
+def test_capitalised_toml_key_rejected(tmp_path: Path) -> None:
+    body = BASE_CONFIG.replace("session_cap", "Session_Cap")
+    with pytest.raises(ConfigError, match="invalid configuration"):
+        load_config(_write(tmp_path, body))
+
+
 def test_unknown_prefixed_env_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(f"{PREFIX}SERVICE__BOGUS", "1")
     with pytest.raises(ConfigError, match="invalid configuration"):
