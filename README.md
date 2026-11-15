@@ -87,6 +87,9 @@ The verifier reads a TOML file with two tables, `[service]` and `[trust]`, passe
   the proof timestamp and the verifier clock.
 - `cors_allowed_origins` (default empty) — origins granted cross-origin access to the API.
   An empty list sends no CORS headers.
+- `log_level` (default `info`) — the threshold below which log events are dropped, one of
+  `debug`, `info`, `warning`, `error`. Debug output includes the subject, issuer, validity
+  dates, and SHA-256 fingerprint of the certificate a refused presentation supplied.
 
 ### [trust]
 
@@ -106,14 +109,8 @@ overrides `pylongfellow.backend` under `[service]`.
 
 Lists and tables cannot be set from the environment and must be written in the TOML file.
 
-`LOG_FORMAT=console` switches log output from JSON lines to console rendering.
-
-`LOG_LEVEL` sets the threshold: `debug`, `info`, `warning`, or `error`, matched without
-regard to case. The default is `info`. Any other value fails startup. Debug output includes
-the subject, issuer, validity dates, and SHA-256 fingerprint of the certificate a refused
-presentation supplied.
-
-`LOG_FORMAT` and `LOG_LEVEL` are read from the environment only and take no prefix.
+`LOG_FORMAT=console` switches log output from JSON lines to console rendering. It is read
+from the environment only and takes no prefix.
 
 ### Proof engine
 
