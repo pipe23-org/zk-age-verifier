@@ -106,8 +106,14 @@ overrides `pylongfellow.backend` under `[service]`.
 
 Lists and tables cannot be set from the environment and must be written in the TOML file.
 
-`LOG_FORMAT=console` switches log output from JSON lines to console rendering. It is read
-from the environment only and takes no prefix.
+`LOG_FORMAT=console` switches log output from JSON lines to console rendering.
+
+`LOG_LEVEL` sets the threshold: `debug`, `info`, `warning`, or `error`, matched without
+regard to case. The default is `info`. Any other value fails startup. Debug output includes
+the subject, issuer, validity dates, and SHA-256 fingerprint of the certificate a refused
+presentation supplied.
+
+`LOG_FORMAT` and `LOG_LEVEL` are read from the environment only and take no prefix.
 
 ### Proof engine
 
