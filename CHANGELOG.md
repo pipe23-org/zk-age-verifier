@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- An `etsi_xml` trust source now takes only certificates listed under a service's `ServiceDigitalIdentity` (not the list's own signer, pointers to other lists, or past service versions), and skips services whose status is not active: `granted` or `recognisedatnationallevel` (ETSI TS 119 612) or `recognized` (the EU Age Verification Trusted List). The list's own signature is still not verified (#78).
+- An `etsi_xml` trust source now takes as anchors only the certificates in the `ServiceDigitalIdentity` of services with status `granted`, `recognisedatnationallevel` or `recognized`, where it took every certificate in the file (#78).
 
 ## 0.5.0 - 2026-11-15
 
